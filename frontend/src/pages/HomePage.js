@@ -1,39 +1,43 @@
 // frontend/src/pages/HomePage.js
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRocket, faHome, faFileUpload } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
+import { UserContext } from '../context/UserContext';
+import Snackbar from '../components/Common/Snackbar'; // <-- IMPORT SNACKBAR
 
 const HomePage = () => {
-    const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
+    const { user, loading } = useContext(UserContext);
 
-    const handleFileChange = (event) => {
-        setSelectedFile(event.target.files[0]);
-        console.log('Selected file:', event.target.files[0]?.name);
+    // ADDED: State for Snackbar
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'info',
+    });
+
+    // Handler to close Snackbar
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, show: false });
     };
 
     const handleUploadClick = () => {
-        // --- Future Logic Placeholder ---
-        // Check if the user is logged in here.
-        // Example (requires UserContext):
-        // const { user } = useContext(UserContext);
-        // if (!user) {
-        //   navigate('/login'); // Redirect to login page if not logged in
-        //   return;
-        // }
-        // --- End Future Logic Placeholder ---
-
-        if (selectedFile) {
-            // If a file is already selected, proceed with "upload" action
-            console.log('Attempting to upload file:', selectedFile.name);
-            alert(`Simulating upload of: ${selectedFile.name}. Backend integration comes later!`);
-            setSelectedFile(null); // Clear selected file after "upload"
+        if (!user) {
+            // Replaced alert with Snackbar
+            setSnackbar({
+                show: true,
+                message: 'Please log in to upload your thesis.',
+                type: 'error',
+            });
+            // Delay navigation slightly to allow snackbar to be seen
+            setTimeout(() => {
+                navigate('/login');
+            }, snackbar.duration || 3000); // Use snackbar's default duration or specify
         } else {
-            // If no file is selected, open the file dialog
-            fileInputRef.current.click();
+            navigate('/upload-thesis');
         }
     };
 
@@ -70,8 +74,7 @@ const HomePage = () => {
                 duration: 0.3,
                 yoyo: Infinity
             }
-        },
-        tap: { scale: 0.95 }
+        }
     };
 
     // Variants for a continuously animating background element
@@ -92,6 +95,14 @@ const HomePage = () => {
 
     return (
         <div className="homepage-container text-center py-5">
+            {/* Snackbar Component */}
+            <Snackbar
+                message={snackbar.message}
+                type={snackbar.type}
+                show={snackbar.show}
+                onClose={handleCloseSnackbar}
+            />
+
             {/* Hero Section */}
             <section className="hero-section mb-5">
                 {/* Animated Background Elements */}
@@ -153,49 +164,24 @@ const HomePage = () => {
                         Streamline your research, detect plagiarism, and enhance grammar with AI-powered tools.
                     </motion.p>
 
-                    {/* UPDATED: Thesis Upload/Login Call to Action */}
-                    {/* New wrapper for the bordered look */}
+                    {/* UPDATED: Thesis Upload Call to Action - now only a button */}
                     <motion.div
-                        className="upload-thesis-box d-flex flex-column align-items-center justify-content-center p-4 rounded-3"
+                        className="d-flex justify-content-center gap-3 align-items-center"
                         variants={containerVariants}
                         initial="hidden"
                         animate="visible"
                     >
-                        {/* Hidden File Input */}
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}
-                            accept=".pdf,.docx,.doc"
-                        />
-
-                        {/* Display selected file name / prompt */}
-                        <motion.div
-                            className="file-display mb-3"
-                            variants={itemVariants}
-                        >
-                            <p className="text-white mb-1">
-                                {selectedFile ? `Selected: ${selectedFile.name}` : "Drag & drop your thesis here, or click to choose file"}
-                            </p>
-                            {selectedFile && (
-                                <small className="text-muted">{selectedFile.size ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}</small>
-                            )}
-                        </motion.div>
-
-
-                        {/* Button to trigger file selection or initiate upload */}
+                        {/* Button now always triggers the redirect logic */}
                         <motion.button
-                            className="btn btn-primary btn-lg" // Kept as btn-primary
-                            onClick={handleUploadClick}
+                            className="btn btn-primary btn-lg"
+                            onClick={handleUploadClick} // This will now trigger the snackbar and redirect
                             variants={itemVariants}
                             whileHover="hover"
                             whileTap="tap"
                         >
                             <FontAwesomeIcon icon={faFileUpload} className="me-2" />
-                            Upload Thesis
+                            Upload Your Thesis
                         </motion.button>
-
                     </motion.div>
                 </div>
             </section>

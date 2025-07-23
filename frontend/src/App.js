@@ -1,45 +1,58 @@
+// frontend/src/App.js
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import './App.css'; // Keep existing CSS if you want, or remove if not needed
 
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHome } from '@fortawesome/free-solid-svg-icons';
+// Import components and pages
 import Header from './components/Layout/Header';
+import Footer from './components/Layout/Footer';
 import HomePage from './pages/HomePage';
-// We'll create these pages in the next steps
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
-// import DashboardPage from './pages/DashboardPage';
-// import NotFoundPage from './pages/NotFoundPage'; // Optional: for 404
+import PrivateRoute from './components/Routing/PrivateRoute';
+import UploadThesisPage from './pages/UploadThesisPage';
+import DashboardPage from './pages/DashboardPage'; // <-- IMPORT NEW DASHBOARD PAGE
+
+// Import global styles and Bootstrap CSS
+import './styles/global.css';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './App.css';
 
 function App() {
   return (
     <Router>
       <div className="App">
-        {Header && <Header />} {/* Conditionally render Header if it exists */}
+        <Header />
 
-        <main>
-
-          {/* Public Routes */}
+        <main className="flex-grow-1">
           <Routes>
-            <Route
-              path="/"
-              element={
-                <HomePage />
-              }
-            />
+            {/* Public Routes */}
+            <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
 
-            {/* Example of a protected route (we'll implement the actual protection later) */}
-            <Route path="/dashboard" element={<h1>Dashboard Page Content (Protected)</h1>} /> {/* Placeholder */}
+            {/* Protected Routes (Wrap with PrivateRoute) */}
+            <Route
+              path="/dashboard"
+              element={
+                <PrivateRoute>
+                  <DashboardPage /> {/* <-- RENDER DashboardPage here */}
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/upload-thesis"
+              element={
+                <PrivateRoute>
+                  <UploadThesisPage />
+                </PrivateRoute>
+              }
+            />
 
-            {/* Catch-all for undefined routes */}
             <Route path="*" element={<h1>404: Page Not Found</h1>} />
           </Routes>
         </main>
 
-        {/* We'll add a Footer component here later */}
+        <Footer />
       </div>
     </Router>
   );

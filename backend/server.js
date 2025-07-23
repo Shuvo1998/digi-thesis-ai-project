@@ -1,30 +1,31 @@
-require('dotenv').config();
+// backend/server.js
+
 const express = require('express');
-const mongoose = require('mongoose');
-const authRoutes = require('./routes/userRoutes'); // Import auth routes
+const connectDB = require('./config/db');
+const cors = require('cors');
+require('dotenv').config();
+
 const app = express();
-const PORT = process.env.PORT || 5000;
 
-app.use(express.json());
-
-const connectDB = async () => {
-    try {
-        await mongoose.connect(process.env.MONGO_URI);
-        console.log('MongoDB Connected...');
-    } catch (err) {
-        console.error(err.message);
-        process.exit(1);
-    }
-};
+// Connect Database
 connectDB();
 
+// Init Middleware
+app.use(express.json({ extended: false })); // For parsing application/json
+app.use(cors()); // Enable CORS
+
+// Define Routes
+app.use('/api/auth', require('./routes/api/auth'));
+app.use('/api/theses', require('./routes/api/theses')); // <-- ADD THIS LINE
+
+// Serve static files from the 'uploads' directory (to access uploaded files via URL)
+app.use('/uploads', express.static('uploads')); // <-- ADD THIS LINE
+
+// Simple test route
 app.get('/', (req, res) => {
-    res.send('DigiThesis AI Backend is running!');
+    res.send('API Running');
 });
 
-// Use auth routes
-app.use('/api/auth', authRoutes); // All auth routes will be prefixed with /api/auth
+const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server started on port ${PORT}`));

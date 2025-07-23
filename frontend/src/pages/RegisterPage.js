@@ -1,46 +1,75 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react'; // ADDED useContext
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Ensure faUserPlus is imported
 import { faUser, faEnvelope, faLock, faUserPlus } from '@fortawesome/free-solid-svg-icons';
+import axios from 'axios'; // ADDED axios import
+import { UserContext } from '../context/UserContext'; // ADDED UserContext import
 
 const RegisterPage = () => {
-    const [username, setUsername] = useState('');
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [confirmPassword, setConfirmPassword] = useState('');
+    // UPDATED: Using a single formData state object for all inputs
+    const [formData, setFormData] = useState({
+        username: '',
+        email: '',
+        password: '',
+        password2: '' // Renamed confirmPassword to password2 for consistency with backend validation
+    });
+    const [error, setError] = useState(''); // ADDED: State for displaying errors
     const navigate = useNavigate();
+    const { login } = useContext(UserContext); // ADDED: Get the login function from context
 
-    const handleSubmit = async (e) => {
+    // Destructure formData for easier access in JSX
+    const { username, email, password, password2 } = formData;
+
+    // UPDATED: Single onChange handler for all form inputs
+    const onChange = e => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        if (error) setError(''); // Clear error when user starts typing again
+    };
+
+    // UPDATED: Replaced handleSubmit with onSubmit for API call
+    const onSubmit = async (e) => { // Renamed from handleSubmit to onSubmit to match form prop
         e.preventDefault();
 
-        if (password !== confirmPassword) {
-            alert("Passwords do not match!");
+        if (password !== password2) { // Use password2 for confirmation
+            setError("Passwords do not match!");
             return;
         }
 
-        console.log('Register attempt with:', { username, email, password });
+        try {
+            // Make API call to backend register endpoint
+            const res = await axios.post('http://localhost:5000/api/auth/register', {
+                username,
+                email,
+                password
+            });
 
-        // --- Future API Call Placeholder ---
-        // try { /* ... api call ... */ } catch (error) { /* ... handle error ... */ }
-        // --- End Future API Call Placeholder ---
+            console.log('Registration successful:', res.data);
+            const { token } = res.data;
 
-        alert(`Registration attempt for ${username}. (This is a simulation!)`);
-        setUsername('');
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        // navigate('/login');
+            // Use the login function from UserContext to set user data and token
+            // For now, we only get token. When we get user data from /api/auth in the future, we'll pass it.
+            login({ token, username, email }); // Pass token and basic user info to login context function
+
+            alert('Registration successful! You are now logged in.'); // Optional: you can remove this alert later for smoother UX
+            navigate('/dashboard'); // Redirect to dashboard after successful registration
+        } catch (err) {
+            console.error('Registration failed:', err.response ? err.response.data : err.message);
+            setError(err.response && err.response.data && err.response.data.errors
+                ? err.response.data.errors[0].msg // Display first error from backend validation
+                : 'Registration failed. Please try again.');
+        }
     };
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
             <div className="card p-4 shadow-lg" style={{ maxWidth: '450px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
-                {/* --- UPDATED HEADING WITH ICON --- */}
                 <h2 className="text-center mb-4 text-dark">
                     <FontAwesomeIcon icon={faUserPlus} className="me-2" /> Register
                 </h2>
-                <form onSubmit={handleSubmit}>
+                {/* ADDED: Error display */}
+                {error && <div className="alert alert-danger">{error}</div>}
+                {/* UPDATED: form onSubmit prop */}
+                <form onSubmit={onSubmit}>
                     {/* Username Field */}
                     <div className="mb-3">
                         <label htmlFor="username" className="form-label text-primary fw-bold text-start d-flex align-items-center">
@@ -52,9 +81,10 @@ const RegisterPage = () => {
                                 type="text"
                                 className="form-control"
                                 id="username"
+                                name="username" // ADDED: name attribute
                                 placeholder="Choose a username"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
+                                value={username} // UPDATED: value from formData
+                                onChange={onChange} // UPDATED: onChange handler
                                 required
                             />
                         </div>
@@ -70,9 +100,10 @@ const RegisterPage = () => {
                                 type="email"
                                 className="form-control"
                                 id="email"
+                                name="email" // ADDED: name attribute
                                 placeholder="name@example.com"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
+                                value={email} // UPDATED: value from formData
+                                onChange={onChange} // UPDATED: onChange handler
                                 required
                             />
                         </div>
@@ -88,16 +119,17 @@ const RegisterPage = () => {
                                 type="password"
                                 className="form-control"
                                 id="password"
+                                name="password" // ADDED: name attribute
                                 placeholder="Create a password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                value={password} // UPDATED: value from formData
+                                onChange={onChange} // UPDATED: onChange handler
                                 required
                             />
                         </div>
                     </div>
                     {/* Confirm Password Field */}
                     <div className="mb-3">
-                        <label htmlFor="confirmPassword" className="form-label text-primary fw-bold text-start d-flex align-items-center">
+                        <label htmlFor="password2" className="form-label text-primary fw-bold text-start d-flex align-items-center"> {/* Renamed htmlFor to password2 */}
                             <FontAwesomeIcon icon={faLock} className="me-2" /> Confirm Password
                         </label>
                         <div className="input-group">
@@ -105,10 +137,11 @@ const RegisterPage = () => {
                             <input
                                 type="password"
                                 className="form-control"
-                                id="confirmPassword"
+                                id="password2" // Renamed id to password2
+                                name="password2" // ADDED: name attribute
                                 placeholder="Confirm your password"
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                value={password2} // UPDATED: value from formData
+                                onChange={onChange} // UPDATED: onChange handler
                                 required
                             />
                         </div>

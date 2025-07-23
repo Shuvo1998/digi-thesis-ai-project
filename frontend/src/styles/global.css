@@ -8,54 +8,23 @@ body,
 
 .App {
     min-height: 100vh;
-    /* Ensure the app container takes at least full viewport height */
-    display: flex;
-    /* Use flexbox to organize content vertically if needed */
-    flex-direction: column;
-    /* Your gradient background */
-    background: linear-gradient(135deg, #1A2A6C, #B21F1F, #FDBB2D);
-    /* Eye-catching gradient */
-}
-
-/* Basic styling for main content area to sit on top of the background */
-.App main {
-    flex-grow: 1;
-    /* Allows main content to expand */
-    padding: 20px;
-    /* Add some padding */
-    color: #fff;
-    /* Light text color for dark background */
-    z-index: 1;
-    /* Ensure content is above any animated background elements */
-    position: relative;
-    /* Needed for z-index to work against static elements */
-}
-
-.App {
-    min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* Updated eye-catching gradient */
+    /* This is crucial for Header-Main-Footer layout */
     background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    /* A darker, yet deep and vibrant gradient */
-    /* Or a brighter one, if preferred: */
-    /* background: linear-gradient(135deg, #FF6B6B, #556270); */
-    /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
-    /* background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); */
-
-    overflow: hidden;
-    /* To prevent overflow from floating elements */
+    overflow-x: hidden;
+    /* Prevent horizontal scroll due to animated elements */
     position: relative;
-    /* Needed for absolute positioning of floating elements */
 }
 
-/* Basic styling for main content area to sit on top of the background */
 .App main {
     flex-grow: 1;
+    /* Makes main content area take up available space */
     padding: 20px;
     color: #fff;
-    /* z-index is handled by the wrapper div in HomePage.js now */
-    /* position: relative; */
+    position: relative;
+    z-index: 1;
+    /* Ensure content is above animated blobs */
 }
 
 /* Styling for the animated background blobs */
@@ -112,3 +81,24 @@ body,
 
 
 /* ... (rest of your global styles like navbar search input, animated-blob etc.) ... */
+/* Snackbar specific styles */
+.snackbar-container {
+    position: fixed;
+    bottom: 20px;
+    /* Distance from bottom */
+    left: 50%;
+    /* Center horizontally */
+    transform: translateX(-50%);
+    /* Adjust for perfect centering */
+    z-index: 1050;
+    /* Ensure it's above most other elements (e.g., Bootstrap modals are 1050) */
+    min-width: 300px;
+    max-width: 90%;
+    /* Responsive width */
+    padding: 1rem 1.5rem;
+    border-radius: 0.5rem;
+    /* Rounded corners */
+    text-align: center;
+    font-size: 1rem;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
