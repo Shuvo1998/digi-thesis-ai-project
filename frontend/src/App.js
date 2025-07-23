@@ -7,8 +7,8 @@ import { faHome } from '@fortawesome/free-solid-svg-icons';
 import Header from './components/Layout/Header';
 import HomePage from './pages/HomePage';
 // We'll create these pages in the next steps
-// import LoginPage from './pages/LoginPage';
-// import RegisterPage from './pages/RegisterPage';
+import LoginPage from './pages/LoginPage';
+import RegisterPage from './pages/RegisterPage';
 // import DashboardPage from './pages/DashboardPage';
 // import NotFoundPage from './pages/NotFoundPage'; // Optional: for 404
 
@@ -28,8 +28,8 @@ function App() {
                 <HomePage />
               }
             />
-            <Route path="/login" element={<h1>Login Page Content</h1>} /> {/* Placeholder */}
-            <Route path="/register" element={<h1>Register Page Content</h1>} /> {/* Placeholder */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
             {/* Example of a protected route (we'll implement the actual protection later) */}
             <Route path="/dashboard" element={<h1>Dashboard Page Content (Protected)</h1>} /> {/* Placeholder */}
