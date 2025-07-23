@@ -1,8 +1,7 @@
 // frontend/src/components/Layout/Header.js
-import React, { useState, useEffect, useRef, useContext } from 'react'; // Import useState, useEffect, useRef
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-// Updated FontAwesome imports to include all necessary icons
 import {
     faSearch, faSignInAlt, faUserPlus, faSignOutAlt,
     faHome, faUserCircle, faGraduationCap, faTasks
@@ -12,92 +11,78 @@ import { UserContext } from '../../context/UserContext';
 
 const Header = () => {
     const { user, logout } = useContext(UserContext);
-    console.log("User from context:", user);
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    // State to manage navbar collapse visibility
-    const [isNavOpen, setIsNavOpen] = useState(false); // New state for navbar open/close
+    const [isNavOpen, setIsNavOpen] = useState(false);
 
-    // Refs for the navbar collapse div and the toggler button
     const navCollapseRef = useRef(null);
     const navTogglerRef = useRef(null);
 
     const handleLogout = () => {
         logout();
         navigate('/login');
-        setIsNavOpen(false); // Close navbar on logout
+        setIsNavOpen(false);
     };
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         console.log('Searching for:', searchQuery);
-        setIsNavOpen(false); // Close navbar after search
+        setIsNavOpen(false);
         // Future: navigate(`/search?q=${searchQuery}`);
     };
 
-    // Function to toggle navbar state
     const toggleNavbar = () => {
         setIsNavOpen(prev => !prev);
     };
 
-    // useEffect to handle clicks outside the navbar
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // If the navbar is open AND
-            // the click is not on the navbar collapse element AND
-            // the click is not on the toggler button
             if (isNavOpen &&
                 navCollapseRef.current && !navCollapseRef.current.contains(event.target) &&
                 navTogglerRef.current && !navTogglerRef.current.contains(event.target)) {
-                setIsNavOpen(false); // Close the navbar
+                setIsNavOpen(false);
             }
         };
 
-        // Add event listener when the navbar is open
         if (isNavOpen) {
             document.addEventListener('mousedown', handleClickOutside);
         }
 
-        // Cleanup function: remove event listener when component unmounts or navbar closes
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isNavOpen]); // Re-run effect when isNavOpen changes
+    }, [isNavOpen]);
 
 
     return (
         <header className="navbar navbar-expand-lg navbar-dark bg-transparent py-3">
             <div className="container-fluid">
-                {/* Brand/Logo */}
-                <Link className="navbar-brand d-flex align-items-center" to="/" onClick={() => setIsNavOpen(false)}> {/* Close on click */}
-                    <FontAwesomeIcon icon={faGraduationCap} className="me-2 fa-2x brand-icon" /> {/* Updated icon */}
+                <Link className="navbar-brand d-flex align-items-center" to="/" onClick={() => setIsNavOpen(false)}>
+                    <FontAwesomeIcon icon={faGraduationCap} className="me-2 fa-2x brand-icon" />
                     <span className="fw-bold fs-4">DigiThesis AI</span>
                 </Link>
 
-                {/* Navbar Toggler for mobile */}
                 <button
-                    ref={navTogglerRef} // Attach ref to the toggler button
+                    ref={navTogglerRef}
                     className="navbar-toggler"
                     type="button"
-                    data-bs-toggle="collapse" // Keep these for Bootstrap's visual class toggling
+                    data-bs-toggle="collapse"
                     data-bs-target="#navbarNav"
                     aria-controls="navbarNav"
-                    aria-expanded={isNavOpen} // Control aria-expanded based on state
+                    aria-expanded={isNavOpen}
                     aria-label="Toggle navigation"
-                    onClick={toggleNavbar} // Use our custom toggle function
+                    onClick={toggleNavbar}
                 >
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                {/* Navbar Links and Search */}
-                {/* Control 'show' class based on isNavOpen state */}
                 <div
-                    ref={navCollapseRef} // Attach ref to the collapsible div
+                    ref={navCollapseRef}
                     className={`collapse navbar-collapse ${isNavOpen ? 'show' : ''}`}
                     id="navbarNav"
                 >
                     <ul className="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
-                        {/* Removed Home Link */}
+                        {/* Home Link (removed as per previous request) */}
 
                         {/* Search Bar */}
                         <li className="nav-item me-3">
@@ -117,37 +102,36 @@ const Header = () => {
                         </li>
 
                         {/* Conditional Navigation Links */}
-                        {!user ? ( // If user is NOT logged in
+                        {!user ? (
                             <>
                                 <li className="nav-item me-2">
-                                    <Link className="btn btn-outline-light" to="/login" onClick={() => setIsNavOpen(false)}> {/* Close on click */}
+                                    <Link className="btn btn-outline-light" to="/login" onClick={() => setIsNavOpen(false)}>
                                         <FontAwesomeIcon icon={faSignInAlt} className="me-2" /> Login
                                     </Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className="btn btn-success" to="/register" onClick={() => setIsNavOpen(false)}> {/* Close on click */}
+                                    <Link className="btn btn-success" to="/register" onClick={() => setIsNavOpen(false)}>
                                         <FontAwesomeIcon icon={faUserPlus} className="me-2" /> Register
                                     </Link>
                                 </li>
                             </>
-                        ) : ( // If user IS logged in
+                        ) : (
                             <>
                                 <li className="nav-item me-2">
-                                    <Link className="btn btn-outline-light" to="/dashboard" onClick={() => setIsNavOpen(false)}> {/* Close on click */}
-                                        <FontAwesomeIcon icon={faUserCircle} className="me-2" /> My Theses {/* Updated icon and text */}
+                                    <Link className="btn btn-outline-light" to="/dashboard" onClick={() => setIsNavOpen(false)}>
+                                        <FontAwesomeIcon icon={faUserCircle} className="me-2" /> My Theses
                                     </Link>
                                 </li>
-                                {/* Conditionally render Admin Dashboard link */}
                                 {(user.role === 'admin' || user.role === 'supervisor') && (
-                                    <li className="nav-item me-2"> {/* Added me-2 for spacing */}
-                                        <Link className="btn btn-outline-info" to="/admin-dashboard" onClick={() => setIsNavOpen(false)}> {/* Close on click, changed button style */}
+                                    <li className="nav-item me-2">
+                                        <Link className="btn btn-outline-info" to="/admin-dashboard" onClick={() => setIsNavOpen(false)}>
                                             <FontAwesomeIcon icon={faTasks} className="me-2" /> Admin Dashboard
                                         </Link>
                                     </li>
                                 )}
                                 <li className="nav-item">
                                     <button className="btn btn-danger" onClick={handleLogout}>
-                                        <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> Logout ({user.username || user.email})
+                                        <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> Logout ({user.username || user.email}) {/* RE-ADDED USER INFO */}
                                     </button>
                                 </li>
                             </>

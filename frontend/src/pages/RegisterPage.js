@@ -1,42 +1,56 @@
-import React, { useState, useContext } from 'react'; // ADDED useContext
+import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faLock, faUserPlus } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios'; // ADDED axios import
-import { UserContext } from '../context/UserContext'; // ADDED UserContext import
+import axios from 'axios';
+import { UserContext } from '../context/UserContext';
+import Snackbar from '../components/Common/Snackbar'; // Ensure Snackbar is imported
 
 const RegisterPage = () => {
-    // UPDATED: Using a single formData state object for all inputs
     const [formData, setFormData] = useState({
         username: '',
         email: '',
         password: '',
-        password2: '' // Renamed confirmPassword to password2 for consistency with backend validation
+        password2: ''
     });
-    const [error, setError] = useState(''); // ADDED: State for displaying errors
+    // Removed 'error' state for alert-danger div, Snackbar will handle all errors
     const navigate = useNavigate();
-    const { login } = useContext(UserContext); // ADDED: Get the login function from context
+    const { login } = useContext(UserContext);
 
-    // Destructure formData for easier access in JSX
-    const { username, email, password, password2 } = formData;
+    // State for Snackbar notifications
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'info',
+    });
 
-    // UPDATED: Single onChange handler for all form inputs
-    const onChange = e => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (error) setError(''); // Clear error when user starts typing again
+    // Handler to close Snackbar
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, show: false });
     };
 
-    // UPDATED: Replaced handleSubmit with onSubmit for API call
-    const onSubmit = async (e) => { // Renamed from handleSubmit to onSubmit to match form prop
-        e.preventDefault();
+    const { username, email, password, password2 } = formData;
 
-        if (password !== password2) { // Use password2 for confirmation
-            setError("Passwords do not match!");
+    const onChange = e => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+        // Clear snackbar on input change
+        if (snackbar.show) setSnackbar({ ...snackbar, show: false });
+    };
+
+    const onSubmit = async (e) => {
+        e.preventDefault();
+        setSnackbar({ ...snackbar, show: false }); // Clear previous snackbar
+
+        if (password !== password2) {
+            setSnackbar({
+                show: true,
+                message: "Passwords do not match!",
+                type: 'error',
+            });
             return;
         }
 
         try {
-            // Make API call to backend register endpoint
             const res = await axios.post('http://localhost:5000/api/auth/register', {
                 username,
                 email,
@@ -44,31 +58,47 @@ const RegisterPage = () => {
             });
 
             console.log('Registration successful:', res.data);
-            const { token } = res.data;
+            const { token, user: userData } = res.data; // Destructure user data (including role) from response
 
-            // Use the login function from UserContext to set user data and token
-            // For now, we only get token. When we get user data from /api/auth in the future, we'll pass it.
-            login({ token, username, email }); // Pass token and basic user info to login context function
+            login({ token, ...userData }); // Pass token and all user data to login context function
 
-            alert('Registration successful! You are now logged in.'); // Optional: you can remove this alert later for smoother UX
-            navigate('/dashboard'); // Redirect to dashboard after successful registration
+            setSnackbar({
+                show: true,
+                message: 'Registration successful! You are now logged in.',
+                type: 'success',
+            });
+            // Delay navigation slightly to allow snackbar to be seen
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, snackbar.duration || 3000);
+
         } catch (err) {
             console.error('Registration failed:', err.response ? err.response.data : err.message);
-            setError(err.response && err.response.data && err.response.data.errors
-                ? err.response.data.errors[0].msg // Display first error from backend validation
-                : 'Registration failed. Please try again.');
+            setSnackbar({
+                show: true,
+                message: err.response && err.response.data && err.response.data.errors
+                    ? err.response.data.errors[0].msg
+                    : 'Registration failed. Please try again.',
+                type: 'error',
+            });
         }
     };
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
+            {/* Snackbar Component */}
+            <Snackbar
+                message={snackbar.message}
+                type={snackbar.type}
+                show={snackbar.show}
+                onClose={handleCloseSnackbar}
+            />
+
             <div className="card p-4 shadow-lg" style={{ maxWidth: '450px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
                 <h2 className="text-center mb-4 text-dark">
                     <FontAwesomeIcon icon={faUserPlus} className="me-2" /> Register
                 </h2>
-                {/* ADDED: Error display */}
-                {error && <div className="alert alert-danger">{error}</div>}
-                {/* UPDATED: form onSubmit prop */}
+                {/* Removed direct error display div, Snackbar handles errors */}
                 <form onSubmit={onSubmit}>
                     {/* Username Field */}
                     <div className="mb-3">
@@ -81,10 +111,10 @@ const RegisterPage = () => {
                                 type="text"
                                 className="form-control"
                                 id="username"
-                                name="username" // ADDED: name attribute
+                                name="username"
                                 placeholder="Choose a username"
-                                value={username} // UPDATED: value from formData
-                                onChange={onChange} // UPDATED: onChange handler
+                                value={username}
+                                onChange={onChange}
                                 required
                             />
                         </div>
@@ -100,10 +130,10 @@ const RegisterPage = () => {
                                 type="email"
                                 className="form-control"
                                 id="email"
-                                name="email" // ADDED: name attribute
+                                name="email"
                                 placeholder="name@example.com"
-                                value={email} // UPDATED: value from formData
-                                onChange={onChange} // UPDATED: onChange handler
+                                value={email}
+                                onChange={onChange}
                                 required
                             />
                         </div>
@@ -119,17 +149,17 @@ const RegisterPage = () => {
                                 type="password"
                                 className="form-control"
                                 id="password"
-                                name="password" // ADDED: name attribute
+                                name="password"
                                 placeholder="Create a password"
-                                value={password} // UPDATED: value from formData
-                                onChange={onChange} // UPDATED: onChange handler
+                                value={password}
+                                onChange={onChange}
                                 required
                             />
                         </div>
                     </div>
                     {/* Confirm Password Field */}
                     <div className="mb-3">
-                        <label htmlFor="password2" className="form-label text-primary fw-bold text-start d-flex align-items-center"> {/* Renamed htmlFor to password2 */}
+                        <label htmlFor="password2" className="form-label text-primary fw-bold text-start d-flex align-items-center">
                             <FontAwesomeIcon icon={faLock} className="me-2" /> Confirm Password
                         </label>
                         <div className="input-group">
@@ -137,11 +167,11 @@ const RegisterPage = () => {
                             <input
                                 type="password"
                                 className="form-control"
-                                id="password2" // Renamed id to password2
-                                name="password2" // ADDED: name attribute
+                                id="password2"
+                                name="password2"
                                 placeholder="Confirm your password"
-                                value={password2} // UPDATED: value from formData
-                                onChange={onChange} // UPDATED: onChange handler
+                                value={password2}
+                                onChange={onChange}
                                 required
                             />
                         </div>

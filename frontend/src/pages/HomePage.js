@@ -1,12 +1,15 @@
 // frontend/src/pages/HomePage.js
-import React, { useState, useRef, useEffect, useContext } from 'react'; // ADDED useEffect
+import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRocket, faHome, faFileUpload, faBookOpen, faFilePdf, faTags, faCalendarAlt, faUserGraduate, faSpinner } from '@fortawesome/free-solid-svg-icons'; // ADDED new icons
+import {
+    faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate // Removed unused faBook, faPencilAlt, faTags
+} from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
+import axios from 'axios';
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
-import axios from 'axios'; // ADDED axios for public fetch
+import ThesisCard from '../components/Thesis/ThesisCard'; // ADDED: Import ThesisCard
 
 const HomePage = () => {
     const fileInputRef = useRef(null);
@@ -19,11 +22,9 @@ const HomePage = () => {
         type: 'info',
     });
 
-    // ADDED: State for public theses
     const [publicTheses, setPublicTheses] = useState([]);
     const [loadingPublicTheses, setLoadingPublicTheses] = useState(true);
     const [publicThesesError, setPublicThesesError] = useState('');
-
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
@@ -44,13 +45,13 @@ const HomePage = () => {
         }
     };
 
+    // This handler is passed to ThesisCard for public downloads
     const handleDownloadPublicThesis = (filePath, fileName) => {
         const fileUrl = `http://localhost:5000/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
 
-    // ADDED: Function to fetch public theses
     const fetchPublicTheses = async () => {
         try {
             setLoadingPublicTheses(true);
@@ -70,12 +71,10 @@ const HomePage = () => {
         }
     };
 
-    // ADDED: useEffect to fetch public theses on component mount
     useEffect(() => {
         fetchPublicTheses();
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
 
-    // Define some animation variants for Framer Motion (existing)
     const containerVariants = {
         hidden: { opacity: 0 },
         visible: {
@@ -112,7 +111,6 @@ const HomePage = () => {
         tap: { scale: 0.95 }
     };
 
-    // Variants for a continuously animating background element (existing)
     const floatingElementVariants = {
         animate: {
             y: ["0%", "5%", "-5%", "0%"],
@@ -146,13 +144,13 @@ const HomePage = () => {
                     animate="animate"
                     style={{
                         position: 'absolute',
-                        top: '10%',
-                        left: '10%',
-                        width: '100px',
-                        height: '100px',
+                        top: '5%',
+                        left: '15%',
+                        width: '150px',
+                        height: '150px',
                         borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.1)',
-                        filter: 'blur(50px)',
+                        background: 'rgba(102, 252, 241, 0.2)',
+                        filter: 'blur(70px)',
                         zIndex: 0
                     }}
                 ></motion.div>
@@ -162,15 +160,50 @@ const HomePage = () => {
                     animate="animate"
                     style={{
                         position: 'absolute',
-                        bottom: '15%',
-                        right: '15%',
-                        width: '120px',
-                        height: '120px',
+                        bottom: '10%',
+                        right: '10%',
+                        width: '180px',
+                        height: '180px',
                         borderRadius: '50%',
-                        background: 'rgba(255, 255, 255, 0.08)',
-                        filter: 'blur(60px)',
+                        background: 'rgba(255, 165, 0, 0.15)',
+                        filter: 'blur(70px)',
                         zIndex: 0,
                         animationDelay: '2s'
+                    }}
+                ></motion.div>
+                {/* Add more blobs for visual interest */}
+                <motion.div
+                    className="animated-blob"
+                    variants={floatingElementVariants}
+                    animate="animate"
+                    style={{
+                        position: 'absolute',
+                        top: '30%',
+                        right: '20%',
+                        width: '100px',
+                        height: '100px',
+                        borderRadius: '50%',
+                        background: 'rgba(147, 112, 219, 0.18)',
+                        filter: 'blur(70px)',
+                        zIndex: 0,
+                        animationDelay: '4s'
+                    }}
+                ></motion.div>
+                <motion.div
+                    className="animated-blob"
+                    variants={floatingElementVariants}
+                    animate="animate"
+                    style={{
+                        position: 'absolute',
+                        bottom: '25%',
+                        left: '5%',
+                        width: '130px',
+                        height: '130px',
+                        borderRadius: '50%',
+                        background: 'rgba(255, 99, 71, 0.12)',
+                        filter: 'blur(70px)',
+                        zIndex: 0,
+                        animationDelay: '6s'
                     }}
                 ></motion.div>
 
@@ -216,7 +249,7 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* ADDED: Public Submissions Section */}
+            {/* Public Submissions Section (existing) */}
             <section className="public-submissions-section py-5 bg-light rounded-3 shadow-lg mt-5">
                 <h2 className="mb-4 text-dark">
                     <FontAwesomeIcon icon={faBookOpen} className="me-3" /> Latest Approved Theses
@@ -236,37 +269,12 @@ const HomePage = () => {
                     <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 px-3">
                         {publicTheses.map((thesis) => (
                             <div className="col" key={thesis._id}>
-                                <div className="card h-100 shadow-sm bg-white text-dark">
-                                    <div className="card-body d-flex flex-column">
-                                        <h5 className="card-title text-primary mb-2">{thesis.title}</h5>
-                                        <h6 className="card-subtitle mb-2 text-muted">
-                                            <FontAwesomeIcon icon={faUserGraduate} className="me-1" />
-                                            Uploaded by: {thesis.user ? thesis.user.username : 'N/A'}
-                                        </h6>
-                                        <h6 className="card-subtitle mb-2 text-muted">
-                                            <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
-                                            Uploaded: {new Date(thesis.uploadDate).toLocaleDateString()}
-                                        </h6>
-                                        <p className="card-text flex-grow-1 overflow-hidden" style={{ maxHeight: '6em' }}>
-                                            {thesis.abstract}
-                                        </p>
-                                        {thesis.keywords && thesis.keywords.length > 0 && (
-                                            <p className="card-text text-muted small">
-                                                <FontAwesomeIcon icon={faTags} className="me-1" />
-                                                Keywords: {thesis.keywords.join(', ')}
-                                            </p>
-                                        )}
-                                        <div className="mt-auto d-flex justify-content-end"> {/* Align download button to end */}
-                                            <button
-                                                className="btn btn-outline-primary btn-sm"
-                                                title="Download Thesis"
-                                                onClick={() => handleDownloadPublicThesis(thesis.filePath, thesis.fileName)}
-                                            >
-                                                <FontAwesomeIcon icon={faFilePdf} className="me-2" /> Download PDF
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
+                                {/* Use ThesisCard component here */}
+                                <ThesisCard
+                                    thesis={thesis}
+                                    onDownload={handleDownloadPublicThesis} // Pass the download handler
+                                // No other actions are passed, so only download will be visible
+                                />
                             </div>
                         ))}
                     </div>
@@ -296,7 +304,6 @@ const HomePage = () => {
                             <FontAwesomeIcon icon={faHome} size="3x" className="mb-3" />
                             <h4>Thesis Management</h4>
                             <p>Organize and track your research progress.</p>
-                            {/* Note: Original icons were faHome, changed to more relevant ones for demo */}
                         </div>
                     </div>
                 </div>

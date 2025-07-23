@@ -3,13 +3,11 @@ import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    FontAwesomeIcon
-} from '@fortawesome/react-fontawesome';
-import {
-    faBookOpen, faFilePdf, faTags, faCalendarAlt, faSpinner,
-    faEdit, faTrashAlt, faDownload, faSearch, faLanguage // Added faLanguage for grammar check
+    faBookOpen, faSpinner // Removed other icons as they are now in ThesisCard
 } from '@fortawesome/free-solid-svg-icons';
+import ThesisCard from '../components/Thesis/ThesisCard'; // ADDED: Import ThesisCard
 
 const DashboardPage = () => {
     const { user, loading: userLoading } = useContext(UserContext);
@@ -22,7 +20,7 @@ const DashboardPage = () => {
         type: 'info',
     });
     const [checkingPlagiarismId, setCheckingPlagiarismId] = useState(null);
-    const [checkingGrammarId, setCheckingGrammarId] = useState(null); // New state for grammar loading indicator
+    const [checkingGrammarId, setCheckingGrammarId] = useState(null);
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
@@ -95,7 +93,7 @@ const DashboardPage = () => {
                 },
             });
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchTheses();
+            fetchTheses(); // Re-fetch thesis to update the plagiarismResult on the card
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
@@ -107,10 +105,10 @@ const DashboardPage = () => {
         }
     };
 
-    // --- NEW: Handle Grammar Check ---
+    // --- Handle Grammar Check (existing) ---
     const handleGrammarCheck = async (thesisId) => {
-        setCheckingGrammarId(thesisId); // Set loading state for this specific thesis
-        setSnackbar({ show: false, message: '', type: 'info' }); // Clear previous snackbars
+        setCheckingGrammarId(thesisId);
+        setSnackbar({ show: false, message: '', type: 'info' });
 
         if (!user || !user.token) {
             setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
@@ -125,8 +123,7 @@ const DashboardPage = () => {
                 },
             });
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            // Re-fetch theses to update the grammarResult on the card
-            fetchTheses();
+            fetchTheses(); // Re-fetch thesis to update the grammarResult on the card
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
@@ -134,7 +131,7 @@ const DashboardPage = () => {
                 : 'Grammar check failed. Please try again.';
             setSnackbar({ show: true, message: errorMessage, type: 'error' });
         } finally {
-            setCheckingGrammarId(null); // Clear loading state
+            setCheckingGrammarId(null);
         }
     };
 
@@ -201,105 +198,19 @@ const DashboardPage = () => {
                 <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                     {theses.map((thesis) => (
                         <div className="col" key={thesis._id}>
-                            <div className="card h-100 shadow-sm bg-light text-dark">
-                                <div className="card-body d-flex flex-column">
-                                    <h5 className="card-title text-primary mb-2">{thesis.title}</h5>
-                                    <h6 className="card-subtitle mb-2 text-muted">
-                                        <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
-                                        Uploaded: {new Date(thesis.uploadDate).toLocaleDateString()}
-                                    </h6>
-                                    <p className="card-text flex-grow-1 overflow-hidden" style={{ maxHeight: '6em' }}>
-                                        {thesis.abstract}
-                                    </p>
-                                    {thesis.keywords && thesis.keywords.length > 0 && (
-                                        <p className="card-text text-muted small">
-                                            <FontAwesomeIcon icon={faTags} className="me-1" />
-                                            Keywords: {thesis.keywords.join(', ')}
-                                        </p>
-                                    )}
-
-                                    {/* Plagiarism Result Display (existing) */}
-                                    {thesis.plagiarismResult && (
-                                        <div className="plagiarism-result mt-3 mb-2 p-2 border rounded-3 bg-white text-start overflow-auto" style={{ maxHeight: '100px', fontSize: '0.9em' }}>
-                                            <strong className="text-info">Plagiarism Check Result:</strong>
-                                            <p className="mb-0">{thesis.plagiarismResult}</p>
-                                        </div>
-                                    )}
-
-                                    {/* NEW: Grammar Result Display */}
-                                    {thesis.grammarResult && (
-                                        <div className="grammar-result mt-3 mb-2 p-2 border rounded-3 bg-white text-start overflow-auto" style={{ maxHeight: '100px', fontSize: '0.9em' }}>
-                                            <strong className="text-info">Grammar Check Result:</strong>
-                                            <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{thesis.grammarResult}</p> {/* Use pre-wrap for line breaks */}
-                                        </div>
-                                    )}
-
-                                    <div className="mt-auto d-flex flex-wrap justify-content-between align-items-center pt-3 border-top">
-                                        <span className={`badge ${thesis.status === 'approved' ? 'bg-success' : thesis.status === 'rejected' ? 'bg-danger' : 'bg-warning text-dark'}`}>
-                                            Status: {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
-                                        </span>
-                                        <div className="d-flex flex-wrap gap-2 mt-2 mt-md-0">
-                                            {/* Plagiarism Check Button (existing) */}
-                                            <button
-                                                className="btn btn-info btn-sm"
-                                                title="Check Plagiarism"
-                                                onClick={() => handlePlagiarismCheck(thesis._id)}
-                                                disabled={checkingPlagiarismId === thesis._id || checkingGrammarId === thesis._id} // Disable during any check
-                                            >
-                                                {checkingPlagiarismId === thesis._id ? (
-                                                    <>
-                                                        <FontAwesomeIcon icon={faSpinner} spin className="me-1" /> Checking...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FontAwesomeIcon icon={faSearch} className="me-1" /> Plagiarism
-                                                    </>
-                                                )}
-                                            </button>
-
-                                            {/* NEW: Grammar Check Button */}
-                                            <button
-                                                className="btn btn-warning text-dark btn-sm"
-                                                title="Check Grammar"
-                                                onClick={() => handleGrammarCheck(thesis._id)}
-                                                disabled={checkingGrammarId === thesis._id || checkingPlagiarismId === thesis._id} // Disable during any check
-                                            >
-                                                {checkingGrammarId === thesis._id ? (
-                                                    <>
-                                                        <FontAwesomeIcon icon={faSpinner} spin className="me-1" /> Checking...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <FontAwesomeIcon icon={faLanguage} className="me-1" /> Grammar
-                                                    </>
-                                                )}
-                                            </button>
-
-                                            <button
-                                                className="btn btn-outline-secondary btn-sm"
-                                                title="Download Thesis"
-                                                onClick={() => handleDownload(thesis.filePath, thesis.fileName)}
-                                            >
-                                                <FontAwesomeIcon icon={faDownload} />
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-primary btn-sm"
-                                                title="Edit Thesis"
-                                                onClick={() => handleEdit(thesis._id)}
-                                            >
-                                                <FontAwesomeIcon icon={faEdit} />
-                                            </button>
-                                            <button
-                                                className="btn btn-outline-danger btn-sm"
-                                                title="Delete Thesis"
-                                                onClick={() => handleDelete(thesis._id)}
-                                            >
-                                                <FontAwesomeIcon icon={faTrashAlt} />
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                            {/* Use ThesisCard component here */}
+                            <ThesisCard
+                                thesis={thesis}
+                                isOwnerOrAdmin={true} // For dashboard, user is always the owner
+                                checkingPlagiarismId={checkingPlagiarismId}
+                                checkingGrammarId={checkingGrammarId}
+                                onPlagiarismCheck={handlePlagiarismCheck}
+                                onGrammarCheck={handleGrammarCheck}
+                                onDownload={handleDownload}
+                                onEdit={handleEdit}
+                                onDelete={handleDelete}
+                            // No onApprove/onReject for DashboardPage
+                            />
                         </div>
                     ))}
                 </div>

@@ -11,7 +11,8 @@ import RegisterPage from './pages/RegisterPage';
 import PrivateRoute from './components/Routing/PrivateRoute';
 import UploadThesisPage from './pages/UploadThesisPage';
 import DashboardPage from './pages/DashboardPage';
-import AdminDashboardPage from './pages/AdminDashboardPage'; // <-- IMPORT NEW ADMIN DASHBOARD PAGE
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import ViewThesisPage from './pages/ViewThesisPage'; // <-- IMPORT NEW VIEW THESIS PAGE
 
 // Import global styles and Bootstrap CSS
 import './styles/global.css';
@@ -30,6 +31,7 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/thesis/:id" element={<ViewThesisPage />} /> {/* <-- ADDED: Public route for viewing a single thesis */}
 
             {/* Protected Routes (Wrap with PrivateRoute) */}
             <Route
@@ -48,12 +50,11 @@ function App() {
                 </PrivateRoute>
               }
             />
-            {/* ADDED: Protected route for Admin Dashboard Page */}
             <Route
               path="/admin-dashboard"
               element={
                 <PrivateRoute>
-                  <AdminDashboardPage /> {/* Render the new AdminDashboardPage */}
+                  <AdminDashboardPage />
                 </PrivateRoute>
               }
             />

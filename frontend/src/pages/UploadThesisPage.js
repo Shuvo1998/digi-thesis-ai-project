@@ -6,7 +6,7 @@ import { faFileUpload, faBook, faPencilAlt, faTags, faSpinner } from '@fortaweso
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar'; // Assuming Snackbar is in this path
+import Snackbar from '../components/Common/Snackbar'; // Ensure Snackbar is imported
 
 const UploadThesisPage = () => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -15,13 +15,11 @@ const UploadThesisPage = () => {
         abstract: '',
         keywords: ''
     });
-    const [uploadError, setUploadError] = useState('');
-    const [uploadSuccess, setUploadSuccess] = useState('');
-    const [isUploading, setIsUploading] = useState(false); // New state for upload in progress
+    const [isUploading, setIsUploading] = useState(false); // State for upload in progress
 
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
-    const { user, loading: userLoading } = useContext(UserContext); // Get user and loading from context
+    const { user, loading: userLoading } = useContext(UserContext);
 
     // State for Snackbar notifications
     const [snackbar, setSnackbar] = useState({
@@ -42,8 +40,6 @@ const UploadThesisPage = () => {
     const onThesisDataChange = e => {
         setThesisData({ ...thesisData, [e.target.name]: e.target.value });
         // Clear all feedback messages when user starts typing
-        setUploadError('');
-        setUploadSuccess('');
         setSnackbar({ ...snackbar, show: false });
     };
 
@@ -52,32 +48,25 @@ const UploadThesisPage = () => {
         setSelectedFile(file);
         console.log('Selected file:', file ? file.name : 'No file');
         // Clear all feedback messages when a new file is selected
-        setUploadError('');
-        setUploadSuccess('');
         setSnackbar({ ...snackbar, show: false });
     };
 
     const handleUploadSubmit = async (e) => {
         e.preventDefault(); // Prevent default form submission
 
-        setUploadError(''); // Clear previous errors
-        setUploadSuccess(''); // Clear previous success messages
         setSnackbar({ ...snackbar, show: false }); // Clear previous snackbar
 
-        // This page is protected by PrivateRoute, so 'user' should exist here.
-        // However, a final check here is good practice.
         if (!user || !user.token) {
             setSnackbar({
                 show: true,
                 message: 'You must be logged in to upload a thesis. Redirecting to login.',
                 type: 'error',
             });
-            setTimeout(() => navigate('/login'), 1500);
+            setTimeout(() => navigate('/login'), snackbar.duration || 3000);
             return;
         }
 
         if (!selectedFile) {
-            setUploadError('Please select a thesis file to upload.');
             setSnackbar({
                 show: true,
                 message: 'Please select a thesis file to upload.',
@@ -86,9 +75,7 @@ const UploadThesisPage = () => {
             return;
         }
 
-        // Basic client-side validation for required text fields
-        if (!title.trim() || !abstract.trim()) { // Use .trim() to check for empty strings
-            setUploadError('Thesis Title and Abstract are required fields.');
+        if (!title.trim() || !abstract.trim()) {
             setSnackbar({
                 show: true,
                 message: 'Thesis Title and Abstract are required fields.',
@@ -100,21 +87,20 @@ const UploadThesisPage = () => {
         setIsUploading(true); // Set uploading state to true
 
         const formDataToSend = new FormData();
-        formDataToSend.append('thesisFile', selectedFile); // 'thesisFile' must match backend Multer fieldname
-        formDataToSend.append('title', title.trim()); // Trim whitespace
-        formDataToSend.append('abstract', abstract.trim()); // Trim whitespace
-        formDataToSend.append('keywords', keywords.trim()); // Trim whitespace
+        formDataToSend.append('thesisFile', selectedFile);
+        formDataToSend.append('title', title.trim());
+        formDataToSend.append('abstract', abstract.trim());
+        formDataToSend.append('keywords', keywords.trim());
 
         try {
             const res = await axios.post('http://localhost:5000/api/theses/upload', formDataToSend, {
                 headers: {
-                    'Content-Type': 'multipart/form-data', // Important for file uploads
-                    'x-auth-token': user.token // Send the JWT token for authentication
+                    'Content-Type': 'multipart/form-data',
+                    'x-auth-token': user.token
                 }
             });
 
             console.log('Thesis upload successful:', res.data);
-            setUploadSuccess('Thesis uploaded successfully!');
             setSnackbar({
                 show: true,
                 message: 'Thesis uploaded successfully!',
@@ -124,17 +110,16 @@ const UploadThesisPage = () => {
             setSelectedFile(null);
             setThesisData({ title: '', abstract: '', keywords: '' });
 
-            // ADDED: Redirect to dashboard after successful upload and snackbar display
+            // Redirect to dashboard after successful upload and snackbar display
             setTimeout(() => {
                 navigate('/dashboard');
-            }, snackbar.duration || 3000); // Use snackbar's default duration or specify
+            }, snackbar.duration || 3000);
 
         } catch (err) {
             console.error('Thesis upload failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
-                ? err.response.data.msg // Backend error message (e.g., "Only PDF files allowed!")
+                ? err.response.data.msg
                 : 'Thesis upload failed. Please try again.';
-            setUploadError(errorMessage);
             setSnackbar({
                 show: true,
                 message: errorMessage,
@@ -145,7 +130,8 @@ const UploadThesisPage = () => {
         }
     };
 
-    // Framer Motion variants (can be shared or defined here)
+
+    // Framer Motion variants (existing)
     const containerVariants = {
         hidden: { opacity: 0, y: 50 },
         visible: {
@@ -205,7 +191,7 @@ const UploadThesisPage = () => {
                     <FontAwesomeIcon icon={faFileUpload} className="me-2" /> Upload Your Thesis
                 </h2>
 
-                <form onSubmit={handleUploadSubmit}> {/* Form for submission */}
+                <form onSubmit={handleUploadSubmit}>
                     {/* Thesis Title Input */}
                     <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
                         <label htmlFor="title" className="form-label text-dark d-flex align-items-center">
@@ -220,7 +206,7 @@ const UploadThesisPage = () => {
                             value={title}
                             onChange={onThesisDataChange}
                             required
-                            disabled={isUploading} // Disable while uploading
+                            disabled={isUploading}
                         />
                     </motion.div>
 
@@ -238,7 +224,7 @@ const UploadThesisPage = () => {
                             value={abstract}
                             onChange={onThesisDataChange}
                             required
-                            disabled={isUploading} // Disable while uploading
+                            disabled={isUploading}
                         ></textarea>
                     </motion.div>
 
@@ -255,7 +241,7 @@ const UploadThesisPage = () => {
                             placeholder="e.g., AI, Machine Learning, Education"
                             value={keywords}
                             onChange={onThesisDataChange}
-                            disabled={isUploading} // Disable while uploading
+                            disabled={isUploading}
                         />
                     </motion.div>
 
@@ -266,13 +252,13 @@ const UploadThesisPage = () => {
                         onChange={handleFileChange}
                         style={{ display: 'none' }}
                         accept=".pdf"
-                        disabled={isUploading} // Disable while uploading
+                        disabled={isUploading}
                     />
 
                     {/* File Selection Area */}
                     <motion.div
                         className="file-upload-area p-4 mb-4 border rounded-3 d-flex flex-column align-items-center justify-content-center"
-                        onClick={() => !isUploading && fileInputRef.current.click()} // Prevent click while uploading
+                        onClick={() => !isUploading && fileInputRef.current.click()}
                         style={{ cursor: isUploading ? 'not-allowed' : 'pointer', backgroundColor: 'rgba(0,0,0,0.05)', borderColor: '#ced4da' }}
                         variants={itemVariants}
                         whileHover={{ scale: isUploading ? 1 : 1.01, borderColor: isUploading ? '#ced4da' : '#007bff' }}
@@ -295,7 +281,7 @@ const UploadThesisPage = () => {
                         variants={buttonVariants}
                         whileHover="hover"
                         whileTap="tap"
-                        disabled={isUploading} // Disable button while uploading
+                        disabled={isUploading}
                     >
                         {isUploading ? (
                             <>

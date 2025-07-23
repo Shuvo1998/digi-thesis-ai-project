@@ -1,104 +1,479 @@
-html,
-body,
-#root {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-}
+/* frontend/src/styles/global.css */
 
-.App {
+/* General Body and Background */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #1a202c;
+    /* Dark background */
+    color: #f8f9fa;
+    /* Light text color */
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    /* This is crucial for Header-Main-Footer layout */
-    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
-    overflow-x: hidden;
-    /* Prevent horizontal scroll due to animated elements */
-    position: relative;
 }
 
-.App main {
-    flex-grow: 1;
-    /* Makes main content area take up available space */
-    padding: 20px;
-    color: #fff;
-    position: relative;
-    z-index: 1;
-    /* Ensure content is above animated blobs */
+/* Main content area to push footer down */
+#root,
+.App {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
-/* Styling for the animated background blobs */
-.animated-blob {
-    /* Styles are mostly inline in HomePage.js, but you can add base styles here */
-    position: absolute;
-    /* You might add more styles here if needed, e.g., default size if not inline */
+main {
+    flex: 1;
+    padding-bottom: 50px;
+    /* Space for footer */
+}
+
+/* Navbar adjustments for transparent background */
+.navbar.bg-transparent {
+    background-color: rgba(0, 0, 0, 0.3) !important;
+    /* Slightly transparent dark */
+    backdrop-filter: blur(5px);
+    /* Frosted glass effect */
+    -webkit-backdrop-filter: blur(5px);
+    /* For Safari */
+}
+
+.navbar-brand .brand-icon {
+    color: #66fcf1;
+    /* A futuristic blue-green for the icon */
+}
+
+.navbar-search-input {
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: #f8f9fa;
+}
+
+.navbar-search-input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.navbar-search-input:focus {
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: #66fcf1;
+    box-shadow: 0 0 0 0.25rem rgba(102, 252, 241, 0.25);
+    color: #f8f9fa;
+}
+
+/* Card Styling */
+.card {
+    border-radius: 15px;
+    /* More rounded corners */
+    border: none;
+    /* Remove default border */
+    overflow: hidden;
+    /* Ensure content respects border-radius */
+}
+
+.card-body {
+    padding: 1.5rem;
+    /* More padding inside cards */
+}
+
+/* Custom Thesis Card Styling */
+.thesis-card-custom {
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.thesis-card-custom:hover {
+    transform: translateY(-5px);
+    /* Slight lift on hover */
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    /* More pronounced shadow on hover */
+}
+
+.thesis-title-link {
+    font-weight: bold;
+    font-size: 1.25rem;
+    /* Slightly larger title */
+    color: #007bff;
+    /* Bootstrap primary blue */
+    transition: color 0.2s ease-in-out;
+}
+
+.thesis-title-link:hover {
+    color: #0056b3;
+    /* Darker blue on hover */
+    text-decoration: underline;
+    /* Underline on hover for clarity */
+}
+
+/* Plagiarism and Grammar Result Boxes */
+.plagiarism-result,
+.grammar-result {
+    background-color: #e9ecef;
+    /* Light gray background for results */
+    border: 1px solid #dee2e6;
+    /* Light border */
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    font-size: 0.875em;
+    max-height: 120px;
+    /* Slightly increased max height */
+    overflow-y: auto;
+    /* Enable scrolling if content overflows */
+    white-space: pre-wrap;
+    /* Preserve whitespace for grammar results */
+    word-break: break-word;
+    /* Break long words */
+}
+
+/* Scrollbar styling for result boxes */
+.plagiarism-result::-webkit-scrollbar,
+.grammar-result::-webkit-scrollbar {
+    width: 8px;
+}
+
+.plagiarism-result::-webkit-scrollbar-track,
+.grammar-result::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+
+.plagiarism-result::-webkit-scrollbar-thumb,
+.grammar-result::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px;
+}
+
+.plagiarism-result::-webkit-scrollbar-thumb:hover,
+.grammar-result::-webkit-scrollbar-thumb:hover {
+    background: #555;
 }
 
 
-/* Styles for the new thesis upload box on the homepage */
-.upload-thesis-box {
-    background-color: rgba(0, 0, 0, 0.4);
-    /* Semi-transparent dark background */
-    border: 2px dashed rgba(255, 255, 255, 0.5);
-    /* Dashed white border */
-    padding: 3rem 2rem;
-    /* More padding for a spacious feel */
-    width: 100%;
-    /* Take full width of parent flex item */
-    max-width: 600px;
-    /* Limit max width for better readability */
-    margin: 2rem auto 0 auto;
-    /* Center it below the heading, add top margin */
-    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
-    /* Subtle shadow for depth */
-    transition: all 0.3s ease;
-    /* Smooth transition for hover effects */
-}
-
-.upload-thesis-box:hover {
-    border-color: #007bff;
-    /* Highlight border on hover */
-    box-shadow: 0px 0px 25px rgba(0, 123, 255, 0.4);
-    /* More prominent shadow on hover */
-}
-
-.upload-thesis-box .file-display p {
-    font-size: 1.1rem;
-    font-weight: 500;
-    color: #e9ecef;
-    /* Lighter text for the prompt */
-}
-
-.upload-thesis-box .file-display small {
-    color: #ced4da;
-    /* Slightly muted text for file size */
-}
-
-.upload-thesis-box .btn-primary {
-    min-width: 200px;
-    /* Give the button a fixed width */
-}
-
-
-/* ... (rest of your global styles like navbar search input, animated-blob etc.) ... */
-/* Snackbar specific styles */
+/* Snackbar specific styles (existing) */
 .snackbar-container {
     position: fixed;
     bottom: 20px;
-    /* Distance from bottom */
     left: 50%;
-    /* Center horizontally */
     transform: translateX(-50%);
-    /* Adjust for perfect centering */
     z-index: 1050;
-    /* Ensure it's above most other elements (e.g., Bootstrap modals are 1050) */
     min-width: 300px;
     max-width: 90%;
-    /* Responsive width */
     padding: 1rem 1.5rem;
     border-radius: 0.5rem;
-    /* Rounded corners */
     text-align: center;
     font-size: 1rem;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Hero section specific styles */
+.hero-section {
+    position: relative;
+    overflow: hidden;
+    /* Ensure blobs don't overflow */
+    padding-top: 80px;
+    /* Adjust as needed */
+    padding-bottom: 80px;
+    /* Adjust as needed */
+}
+
+/* Animated blobs */
+.animated-blob {
+    position: absolute;
+    border-radius: 50%;
+    opacity: 0.15;
+    /* Make them more subtle */
+    filter: blur(70px);
+    /* More blur for a softer look */
+    z-index: 0;
+}
+
+/* Adjust blob positions for better visual balance */
+.animated-blob:nth-child(1) {
+    top: 5%;
+    left: 15%;
+    width: 150px;
+    height: 150px;
+    background: rgba(102, 252, 241, 0.2);
+    /* Light blue-green */
+    animation-delay: 0s;
+}
+
+.animated-blob:nth-child(2) {
+    bottom: 10%;
+    right: 10%;
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 165, 0, 0.15);
+    /* Soft orange */
+    animation-delay: 2s;
+}
+
+.animated-blob:nth-child(3) {
+    top: 30%;
+    right: 20%;
+    width: 100px;
+    height: 100px;
+    background: rgba(147, 112, 219, 0.18);
+    /* Medium purple */
+    animation-delay: 4s;
+}
+
+.animated-blob:nth-child(4) {
+    bottom: 25%;
+    left: 5%;
+    width: 130px;
+    height: 130px;
+    background: rgba(255, 99, 71, 0.12);
+    /* Tomato red */
+    animation-delay: 6s;
+}
+
+/* Ensure content is above blobs */
+.hero-section>div {
+    position: relative;
+    z-index: 1;
+}
+
+/* Text colors for hero section */
+.hero-section h1,
+.hero-section p {
+    color: #f8f9fa;
+    /* Light text for dark background */
+}
+
+.hero-section .text-success {
+    color: #66fcf1 !important;
+    /* Custom success color for highlight */
+}
+
+/* Features section cards */
+.features-section .card {
+    background-color: rgba(255, 255, 255, 0.95);
+    /* Slightly opaque white */
+    color: #212529;
+    /* Dark text for light card */
+    border: 1px solid #e9ecef;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.features-section .card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+}
+
+.features-section .card .fa-3x {
+    color: #007bff;
+    /* Primary color for icons */
+}
+
+/* Public submissions section */
+.public-submissions-section {
+    background-color: rgba(255, 255, 255, 0.95);
+    /* Light background for content */
+    color: #212529;
+    /* Dark text */
+}
+
+.public-submissions-section h2 {
+    color: #212529;
+    /* Ensure heading is dark */
+}
+
+/* General button styling adjustments */
+.btn {
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-success {
+    background-color: #28a745;
+    border-color: #28a745;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+    border-color: #1e7e34;
+}
+
+.btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+.btn-info {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-info:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    border-color: #ffc107;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
+    border-color: #d39e00;
+}
+
+.btn-outline-primary {
+    color: #007bff;
+    border-color: #007bff;
+}
+
+.btn-outline-primary:hover {
+    background-color: #007bff;
+    color: #fff;
+}
+
+.btn-outline-secondary {
+    color: #6c757d;
+    border-color: #6c757d;
+}
+
+.btn-outline-secondary:hover {
+    background-color: #6c757d;
+    color: #fff;
+}
+
+.btn-outline-info {
+    color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.btn-outline-info:hover {
+    background-color: #17a2b8;
+    color: #fff;
+}
+
+/* Form control adjustments */
+.form-control {
+    border-radius: 8px;
+    border: 1px solid #ced4da;
+    padding: 0.75rem 1rem;
+}
+
+.form-control:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+}
+
+textarea.form-control {
+    min-height: 100px;
+}
+
+/* Specific styles for the upload file area */
+.file-upload-area {
+    border: 2px dashed #007bff;
+    /* Dashed border for file upload */
+    background-color: rgba(0, 123, 255, 0.05);
+    /* Light blue background */
+    transition: all 0.2s ease-in-out;
+}
+
+.file-upload-area:hover {
+    background-color: rgba(0, 123, 255, 0.1);
+    border-color: #0056b3;
+}
+
+.file-upload-area .fa-3x {
+    color: #007bff;
+}
+
+/* Input group adjustments */
+.input-group-text {
+    border-radius: 8px 0 0 8px !important;
+    background-color: #e9ecef;
+    border-color: #ced4da;
+    color: #495057;
+}
+
+/* Custom styles for the homepage hero section */
+.homepage-container {
+    position: relative;
+    overflow: hidden;
+    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+    /* Gradient background */
+    color: #f8f9fa;
+}
+
+.homepage-container .hero-section {
+    padding-top: 100px;
+    padding-bottom: 100px;
+}
+
+.homepage-container .text-success {
+    color: #66fcf1 !important;
+    /* Custom accent color */
+}
+
+/* Footer styling */
+.footer {
+    background-color: #212529;
+    color: #f8f9fa;
+    padding: 20px 0;
+    margin-top: auto;
+    /* Pushes footer to the bottom */
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .display-4 {
+        font-size: 2.5rem;
+    }
+
+    .lead {
+        font-size: 1rem;
+    }
+
+    .btn-lg {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+    }
+
+    .navbar-nav {
+        text-align: center;
+    }
+
+    .navbar-nav .nav-item {
+        margin-bottom: 10px;
+    }
+
+    .navbar-search-input {
+        width: 100%;
+    }
+
+    .navbar-nav .btn {
+        width: 100%;
+    }
+}
+
+/* Ensure consistent spacing for buttons in flex containers */
+.d-flex.gap-2>.btn,
+.d-flex.gap-3>.btn {
+    margin-right: 0.5rem;
+    /* Standard gap */
+    margin-bottom: 0.5rem;
+    /* For wrapping */
+}
+
+.d-flex.gap-2>.btn:last-child,
+.d-flex.gap-3>.btn:last-child {
+    margin-right: 0;
 }

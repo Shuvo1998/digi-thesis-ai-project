@@ -6,9 +6,9 @@ import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faCheckCircle, faTimesCircle, faDownload, faSpinner,
-    faClipboardList, faUserGraduate, faCalendarAlt, faTags, faFilePdf
+    faSpinner, faClipboardList // Removed other icons as they are now in ThesisCard
 } from '@fortawesome/free-solid-svg-icons';
+import ThesisCard from '../components/Thesis/ThesisCard'; // ADDED: Import ThesisCard
 
 const AdminDashboardPage = () => {
     const { user, loading: userLoading } = useContext(UserContext);
@@ -21,6 +21,8 @@ const AdminDashboardPage = () => {
         message: '',
         type: 'info',
     });
+    const [checkingPlagiarismId, setCheckingPlagiarismId] = useState(null); // For plagiarism button loading state
+    const [checkingGrammarId, setCheckingGrammarId] = useState(null);    // For grammar button loading state
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
@@ -28,8 +30,7 @@ const AdminDashboardPage = () => {
 
     // Function to fetch pending theses
     const fetchPendingTheses = async () => {
-        // Ensure user is loaded and has the correct role before fetching
-        if (userLoading) return; // Wait until user context is loaded
+        if (userLoading) return;
 
         if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
             setError('Access Denied: You do not have permission to view this page.');
@@ -39,7 +40,6 @@ const AdminDashboardPage = () => {
                 type: 'error',
             });
             setLoadingTheses(false);
-            // Redirect if not authorized after a short delay
             setTimeout(() => navigate('/'), 3000);
             return;
         }
@@ -49,7 +49,7 @@ const AdminDashboardPage = () => {
             setError('');
             const res = await axios.get('http://localhost:5000/api/theses/pending', {
                 headers: {
-                    'x-auth-token': user.token, // Send JWT for authentication
+                    'x-auth-token': user.token,
                 },
             });
             setPendingTheses(res.data);
@@ -66,10 +66,9 @@ const AdminDashboardPage = () => {
         }
     };
 
-    // Fetch pending theses on component mount and when user context changes
     useEffect(() => {
         fetchPendingTheses();
-    }, [user, userLoading]); // Re-fetch if user or userLoading state changes
+    }, [user, userLoading]);
 
     const handleApprove = async (thesisId) => {
         if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
@@ -83,7 +82,7 @@ const AdminDashboardPage = () => {
                 },
             });
             setSnackbar({ show: true, message: 'Thesis approved successfully!', type: 'success' });
-            fetchPendingTheses(); // Re-fetch list to remove approved thesis
+            fetchPendingTheses();
         } catch (err) {
             console.error('Failed to approve thesis:', err.response ? err.response.data : err.message);
             setSnackbar({ show: true, message: 'Failed to approve thesis. Please try again.', type: 'error' });
@@ -103,7 +102,7 @@ const AdminDashboardPage = () => {
                     },
                 });
                 setSnackbar({ show: true, message: 'Thesis rejected successfully!', type: 'success' });
-                fetchPendingTheses(); // Re-fetch list to remove rejected thesis
+                fetchPendingTheses();
             } catch (err) {
                 console.error('Failed to reject thesis:', err.response ? err.response.data : err.message);
                 setSnackbar({ show: true, message: 'Failed to reject thesis. Please try again.', type: 'error' });
@@ -117,7 +116,67 @@ const AdminDashboardPage = () => {
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
 
-    // Render loading state
+    // --- Handle Plagiarism Check --- (copied from DashboardPage.js as logic is identical)
+    const handlePlagiarismCheck = async (thesisId) => {
+        setCheckingPlagiarismId(thesisId);
+        setSnackbar({ show: false, message: '', type: 'info' });
+
+        if (!user || !user.token) {
+            setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
+            setCheckingPlagiarismId(null);
+            return;
+        }
+
+        try {
+            const res = await axios.post(`http://localhost:5000/api/theses/check-plagiarism/${thesisId}`, {}, {
+                headers: {
+                    'x-auth-token': user.token,
+                },
+            });
+            setSnackbar({ show: true, message: res.data.msg, type: 'success' });
+            fetchPendingTheses(); // Re-fetch list to update the plagiarismResult on the card
+        } catch (err) {
+            console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
+            const errorMessage = err.response && err.response.data && err.response.data.msg
+                ? err.response.data.msg
+                : 'Plagiarism check failed. Please try again.';
+            setSnackbar({ show: true, message: errorMessage, type: 'error' });
+        } finally {
+            setCheckingPlagiarismId(null);
+        }
+    };
+
+    // --- Handle Grammar Check --- (copied from DashboardPage.js as logic is identical)
+    const handleGrammarCheck = async (thesisId) => {
+        setCheckingGrammarId(thesisId);
+        setSnackbar({ show: false, message: '', type: 'info' });
+
+        if (!user || !user.token) {
+            setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
+            setCheckingGrammarId(null);
+            return;
+        }
+
+        try {
+            const res = await axios.post(`http://localhost:5000/api/theses/check-grammar/${thesisId}`, {}, {
+                headers: {
+                    'x-auth-token': user.token,
+                },
+            });
+            setSnackbar({ show: true, message: res.data.msg, type: 'success' });
+            fetchPendingTheses(); // Re-fetch list to update the grammarResult on the card
+        } catch (err) {
+            console.error('Grammar check failed:', err.response ? err.response.data : err.message);
+            const errorMessage = err.response && err.response.data && err.response.data.msg
+                ? err.response.data.msg
+                : 'Grammar check failed. Please try again.';
+            setSnackbar({ show: true, message: errorMessage, type: 'error' });
+        } finally {
+            setCheckingGrammarId(null);
+        }
+    };
+
+
     if (userLoading || loadingTheses) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
@@ -127,14 +186,13 @@ const AdminDashboardPage = () => {
         );
     }
 
-    // Render access denied state
     if (error) {
         return (
             <div className="container py-5 text-center">
                 <Snackbar message={snackbar.message} type={snackbar.type} show={snackbar.show} onClose={handleCloseSnackbar} />
                 <h1 className="text-danger mb-4">Access Denied</h1>
                 <p className="lead text-white">{error}</p>
-                <p className="text-white-50">Please ensure you are logged in with an administrator or supervisor account.</p>
+                <button className="btn btn-primary mt-3" onClick={() => navigate(-1)}>Go Back</button>
             </div>
         );
     }
@@ -156,51 +214,19 @@ const AdminDashboardPage = () => {
                 <div className="row row-cols-1 g-4">
                     {pendingTheses.map((thesis) => (
                         <div className="col" key={thesis._id}>
-                            <div className="card h-100 shadow-sm bg-light text-dark">
-                                <div className="card-body d-flex flex-column">
-                                    <h5 className="card-title text-primary mb-2">{thesis.title}</h5>
-                                    <h6 className="card-subtitle mb-2 text-muted">
-                                        <FontAwesomeIcon icon={faUserGraduate} className="me-1" />
-                                        Uploaded by: {thesis.user ? thesis.user.username : 'N/A'} ({thesis.user ? thesis.user.email : 'N/A'})
-                                    </h6>
-                                    <h6 className="card-subtitle mb-2 text-muted">
-                                        <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
-                                        Uploaded: {new Date(thesis.uploadDate).toLocaleDateString()}
-                                    </h6>
-                                    <p className="card-text flex-grow-1 overflow-hidden" style={{ maxHeight: '6em' }}>
-                                        {thesis.abstract}
-                                    </p>
-                                    {thesis.keywords && thesis.keywords.length > 0 && (
-                                        <p className="card-text text-muted small">
-                                            <FontAwesomeIcon icon={faTags} className="me-1" />
-                                            Keywords: {thesis.keywords.join(', ')}
-                                        </p>
-                                    )}
-                                    <div className="mt-auto d-flex justify-content-end pt-3 border-top">
-                                        <button
-                                            className="btn btn-outline-secondary btn-sm me-2"
-                                            title="Download Thesis"
-                                            onClick={() => handleDownload(thesis.filePath, thesis.fileName)}
-                                        >
-                                            <FontAwesomeIcon icon={faFilePdf} className="me-2" /> Download
-                                        </button>
-                                        <button
-                                            className="btn btn-success btn-sm me-2"
-                                            title="Approve Thesis"
-                                            onClick={() => handleApprove(thesis._id)}
-                                        >
-                                            <FontAwesomeIcon icon={faCheckCircle} className="me-2" /> Approve
-                                        </button>
-                                        <button
-                                            className="btn btn-danger btn-sm"
-                                            title="Reject Thesis"
-                                            onClick={() => handleReject(thesis._id)}
-                                        >
-                                            <FontAwesomeIcon icon={faTimesCircle} className="me-2" /> Reject
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            {/* Use ThesisCard component here */}
+                            <ThesisCard
+                                thesis={thesis}
+                                isOwnerOrAdmin={true} // Admin/Supervisor has owner-like permissions for checks
+                                checkingPlagiarismId={checkingPlagiarismId}
+                                checkingGrammarId={checkingGrammarId}
+                                onPlagiarismCheck={handlePlagiarismCheck}
+                                onGrammarCheck={handleGrammarCheck}
+                                onDownload={handleDownload}
+                                onApprove={handleApprove}
+                                onReject={handleReject}
+                            // No onEdit/onDelete for Admin Dashboard
+                            />
                         </div>
                     ))}
                 </div>
