@@ -6,22 +6,27 @@ const UserSchema = new mongoose.Schema({
     username: {
         type: String,
         required: true,
-        unique: true, // Ensures no two users have the same username
-        trim: true    // Removes whitespace from both ends of a string
+        unique: true,
+        trim: true
     },
     email: {
         type: String,
         required: true,
-        unique: true, // Ensures no two users have the same email
-        lowercase: true // Converts email to lowercase before saving
+        unique: true,
+        lowercase: true
     },
     password: {
         type: String,
         required: true
     },
+    role: { // ADDED: Role field
+        type: String,
+        enum: ['user', 'admin', 'supervisor'], // Define allowed roles
+        default: 'user' // Default role for new users
+    },
     date: {
         type: Date,
-        default: Date.now // Automatically sets the current date when a user is created
+        default: Date.now
     }
 });
 

@@ -10,7 +10,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import PrivateRoute from './components/Routing/PrivateRoute';
 import UploadThesisPage from './pages/UploadThesisPage';
-import DashboardPage from './pages/DashboardPage'; // <-- IMPORT NEW DASHBOARD PAGE
+import DashboardPage from './pages/DashboardPage';
+import AdminDashboardPage from './pages/AdminDashboardPage'; // <-- IMPORT NEW ADMIN DASHBOARD PAGE
 
 // Import global styles and Bootstrap CSS
 import './styles/global.css';
@@ -35,7 +36,7 @@ function App() {
               path="/dashboard"
               element={
                 <PrivateRoute>
-                  <DashboardPage /> {/* <-- RENDER DashboardPage here */}
+                  <DashboardPage />
                 </PrivateRoute>
               }
             />
@@ -44,6 +45,15 @@ function App() {
               element={
                 <PrivateRoute>
                   <UploadThesisPage />
+                </PrivateRoute>
+              }
+            />
+            {/* ADDED: Protected route for Admin Dashboard Page */}
+            <Route
+              path="/admin-dashboard"
+              element={
+                <PrivateRoute>
+                  <AdminDashboardPage /> {/* Render the new AdminDashboardPage */}
                 </PrivateRoute>
               }
             />

@@ -2,16 +2,28 @@
 
 const express = require('express');
 const router = express.Router();
-const bcrypt = require('bcryptjs'); // For password hashing
-const jwt = require('jsonwebtoken'); // For generating tokens
-const { check, validationResult } = require('express-validator'); // For input validation
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const config = require('config'); // For accessing jwtSecret
+const { check, validationResult } = require('express-validator');
 
-// Load User model
-const User = require('../../models/User');
+const auth = require('../../middleware/auth'); // Our authentication middleware
+const User = require('../../models/User'); // User Model
 
-// Load environment variables
-require('dotenv').config();
-const jwtSecret = process.env.JWT_SECRET; // Retrieve JWT secret from .env
+// @route   GET api/auth
+// @desc    Get user by token (for authenticated users)
+// @access  Private
+router.get('/', auth, async (req, res) => {
+    try {
+        // req.user.id comes from our auth middleware
+        // .select('-password') excludes the password from the returned user object
+        const user = await User.findById(req.user.id).select('-password');
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
 // @route   POST api/auth/register
 // @desc    Register user
@@ -19,10 +31,12 @@ const jwtSecret = process.env.JWT_SECRET; // Retrieve JWT secret from .env
 router.post(
     '/register',
     [
-        // Input validation using express-validator
         check('username', 'Username is required').not().isEmpty(),
         check('email', 'Please include a valid email').isEmail(),
-        check('password', 'Please enter a password with 6 or more characters').isLength({ min: 6 }),
+        check(
+            'password',
+            'Please enter a password with 6 or more characters'
+        ).isLength({ min: 6 }),
     ],
     async (req, res) => {
         const errors = validationResult(req);
@@ -33,45 +47,40 @@ router.post(
         const { username, email, password } = req.body;
 
         try {
-            // 1. Check if user already exists
             let user = await User.findOne({ email });
             if (user) {
                 return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
             }
 
-            // If user doesn't exist, create a new User instance
             user = new User({
                 username,
                 email,
-                password, // This will be hashed next
+                password,
+                // Role will default to 'user' as per UserSchema definition
             });
 
-            // 2. Hash password
-            const salt = await bcrypt.genSalt(10); // Generate a salt (recommended 10 rounds)
-            user.password = await bcrypt.hash(password, salt); // Hash the password with the salt
+            const salt = await bcrypt.genSalt(10);
+            user.password = await bcrypt.hash(password, salt);
 
-            // 3. Save user to database
             await user.save();
 
-            // 4. Create and return JSON Web Token (JWT)
+            // Payload for JWT (ADDED role here)
             const payload = {
                 user: {
-                    id: user.id, // Mongoose creates an _id field which we access as .id
-                    username: user.username, // Include username in payload for convenience
-                    email: user.email // Include email in payload for convenience
+                    id: user.id,
+                    role: user.role // ADDED: Include the user's role in the JWT payload
                 },
             };
 
             jwt.sign(
                 payload,
-                jwtSecret,
-                { expiresIn: '1h' }, // Token expires in 1 hour (adjust as needed)
+                config.get('jwtSecret'),
+                { expiresIn: '1h' }, // Token expires in 1 hour
                 (err, token) => {
                     if (err) throw err;
-                    res.json({ token }); // Send the token back to the client
+                    res.json({ token });
                 }
             );
-
         } catch (err) {
             console.error(err.message);
             res.status(500).send('Server Error');
@@ -85,7 +94,6 @@ router.post(
 router.post(
     '/login',
     [
-        // Input validation for login
         check('email', 'Please include a valid email').isEmail(),
         check('password', 'Password is required').exists(),
     ],
@@ -98,37 +106,33 @@ router.post(
         const { email, password } = req.body;
 
         try {
-            // 1. Check if user exists (by email)
             let user = await User.findOne({ email });
             if (!user) {
                 return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
             }
 
-            // 2. Compare entered password with hashed password in DB
             const isMatch = await bcrypt.compare(password, user.password);
             if (!isMatch) {
                 return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
             }
 
-            // 3. Create and return JWT (same as registration)
+            // Payload for JWT (ADDED role here)
             const payload = {
                 user: {
                     id: user.id,
-                    username: user.username,
-                    email: user.email
+                    role: user.role // ADDED: Include the user's role in the JWT payload
                 },
             };
 
             jwt.sign(
                 payload,
-                jwtSecret,
-                { expiresIn: '1h' },
+                config.get('jwtSecret'),
+                { expiresIn: '1h' }, // Token expires in 1 hour
                 (err, token) => {
                     if (err) throw err;
                     res.json({ token });
                 }
             );
-
         } catch (err) {
             console.error(err.message);
             res.status(500).send('Server Error');

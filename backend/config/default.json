@@ -1,0 +1,6 @@
+{
+    "mongoURI": "mongodb+srv://skr:kMK1bVUgASz8xesd@cluster0.ampgcxu.mongodb.net/thesis-ai-DB?retryWrites=true&w=majority&appName=Cluster0",
+    "jwtSecret": "28e79e9800a767e089d1687af5587fb83a78488876b9f2d4dbd86575c0abfeb2f2b78cf7c6ceaab2690ef6ff7b3e3871f2d154a47403e273bc2718539e07e5ab",
+    "githubClientId": "YOUR_GITHUB_CLIENT_ID",
+    "githubSecret": "YOUR_GITHUB_SECRET"
+}

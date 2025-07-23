@@ -2,12 +2,17 @@
 import React, { useState, useEffect, useRef, useContext } from 'react'; // Import useState, useEffect, useRef
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faRocket, faSignInAlt, faUserPlus, faSignOutAlt, faTachometerAlt } from '@fortawesome/free-solid-svg-icons';
+// Updated FontAwesome imports to include all necessary icons
+import {
+    faSearch, faSignInAlt, faUserPlus, faSignOutAlt,
+    faHome, faUserCircle, faGraduationCap, faTasks
+} from '@fortawesome/free-solid-svg-icons';
 
 import { UserContext } from '../../context/UserContext';
 
 const Header = () => {
     const { user, logout } = useContext(UserContext);
+    console.log("User from context:", user);
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
     // State to manage navbar collapse visibility
@@ -27,7 +32,7 @@ const Header = () => {
         e.preventDefault();
         console.log('Searching for:', searchQuery);
         setIsNavOpen(false); // Close navbar after search
-        // navigate(`/search?q=${searchQuery}`);
+        // Future: navigate(`/search?q=${searchQuery}`);
     };
 
     // Function to toggle navbar state
@@ -64,8 +69,8 @@ const Header = () => {
         <header className="navbar navbar-expand-lg navbar-dark bg-transparent py-3">
             <div className="container-fluid">
                 {/* Brand/Logo */}
-                <Link className="navbar-brand d-flex align-items-center" to="/">
-                    <FontAwesomeIcon icon={faRocket} className="me-2 fa-2x brand-icon" />
+                <Link className="navbar-brand d-flex align-items-center" to="/" onClick={() => setIsNavOpen(false)}> {/* Close on click */}
+                    <FontAwesomeIcon icon={faGraduationCap} className="me-2 fa-2x brand-icon" /> {/* Updated icon */}
                     <span className="fw-bold fs-4">DigiThesis AI</span>
                 </Link>
 
@@ -92,6 +97,8 @@ const Header = () => {
                     id="navbarNav"
                 >
                     <ul className="navbar-nav ms-auto mb-2 mb-lg-0 align-items-lg-center">
+                        {/* Removed Home Link */}
+
                         {/* Search Bar */}
                         <li className="nav-item me-3">
                             <form className="d-flex" onSubmit={handleSearchSubmit}>
@@ -127,9 +134,17 @@ const Header = () => {
                             <>
                                 <li className="nav-item me-2">
                                     <Link className="btn btn-outline-light" to="/dashboard" onClick={() => setIsNavOpen(false)}> {/* Close on click */}
-                                        <FontAwesomeIcon icon={faTachometerAlt} className="me-2" /> Dashboard
+                                        <FontAwesomeIcon icon={faUserCircle} className="me-2" /> My Theses {/* Updated icon and text */}
                                     </Link>
                                 </li>
+                                {/* Conditionally render Admin Dashboard link */}
+                                {(user.role === 'admin' || user.role === 'supervisor') && (
+                                    <li className="nav-item me-2"> {/* Added me-2 for spacing */}
+                                        <Link className="btn btn-outline-info" to="/admin-dashboard" onClick={() => setIsNavOpen(false)}> {/* Close on click, changed button style */}
+                                            <FontAwesomeIcon icon={faTasks} className="me-2" /> Admin Dashboard
+                                        </Link>
+                                    </li>
+                                )}
                                 <li className="nav-item">
                                     <button className="btn btn-danger" onClick={handleLogout}>
                                         <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> Logout ({user.username || user.email})
