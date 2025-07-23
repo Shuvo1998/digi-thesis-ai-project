@@ -1,0 +1,54 @@
+/* frontend/src/styles/global.css */
+
+/* ... (previous global styles like html, body, .App, .App main) ... */
+
+/* Custom styles for the Header's search input */
+.navbar .input-group .input-group-text {
+    background-color: #343a40 !important;
+    /* Slightly darker than default bg-dark for contrast */
+    border-color: #495057 !important;
+    /* A subtle border color */
+    border-right: none !important;
+    /* Remove border between icon and input */
+    transition: all 0.2s ease-in-out;
+    /* Smooth transition for hover/focus */
+}
+
+.navbar .form-control {
+    background-color: #343a40 !important;
+    /* Match input group text background */
+    color: #fff !important;
+    /* White text */
+    border-color: #495057 !important;
+    /* Subtle border color */
+    border-left: none !important;
+    /* Remove border between input and icon */
+    box-shadow: none !important;
+    /* Remove default Bootstrap focus shadow */
+    transition: all 0.2s ease-in-out;
+    /* Smooth transition for hover/focus */
+}
+
+.navbar .form-control::placeholder {
+    color: #adb5bd !important;
+    /* Lighter placeholder text */
+    opacity: 1;
+    /* Ensure opacity is full */
+}
+
+/* Focus state for the input field */
+.navbar .form-control:focus {
+    background-color: #495057 !important;
+    /* Slightly lighten background on focus */
+    border-color: #007bff !important;
+    /* Eye-catching blue border on focus */
+    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25) !important;
+    /* Custom focus ring */
+}
+
+/* Hover state for the entire input group (optional, if you want a subtle glow) */
+.navbar .input-group:hover .input-group-text,
+.navbar .input-group:hover .form-control {
+    border-color: #6c757d !important;
+    /* Slightly lighter border on hover */
+}
