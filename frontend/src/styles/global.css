@@ -1,54 +1,114 @@
-/* frontend/src/styles/global.css */
-
-/* ... (previous global styles like html, body, .App, .App main) ... */
-
-/* Custom styles for the Header's search input */
-.navbar .input-group .input-group-text {
-    background-color: #343a40 !important;
-    /* Slightly darker than default bg-dark for contrast */
-    border-color: #495057 !important;
-    /* A subtle border color */
-    border-right: none !important;
-    /* Remove border between icon and input */
-    transition: all 0.2s ease-in-out;
-    /* Smooth transition for hover/focus */
+html,
+body,
+#root {
+    height: 100%;
+    margin: 0;
+    padding: 0;
 }
 
-.navbar .form-control {
-    background-color: #343a40 !important;
-    /* Match input group text background */
-    color: #fff !important;
-    /* White text */
-    border-color: #495057 !important;
-    /* Subtle border color */
-    border-left: none !important;
-    /* Remove border between input and icon */
-    box-shadow: none !important;
-    /* Remove default Bootstrap focus shadow */
-    transition: all 0.2s ease-in-out;
-    /* Smooth transition for hover/focus */
+.App {
+    min-height: 100vh;
+    /* Ensure the app container takes at least full viewport height */
+    display: flex;
+    /* Use flexbox to organize content vertically if needed */
+    flex-direction: column;
+    /* Your gradient background */
+    background: linear-gradient(135deg, #1A2A6C, #B21F1F, #FDBB2D);
+    /* Eye-catching gradient */
 }
 
-.navbar .form-control::placeholder {
-    color: #adb5bd !important;
-    /* Lighter placeholder text */
-    opacity: 1;
-    /* Ensure opacity is full */
+/* Basic styling for main content area to sit on top of the background */
+.App main {
+    flex-grow: 1;
+    /* Allows main content to expand */
+    padding: 20px;
+    /* Add some padding */
+    color: #fff;
+    /* Light text color for dark background */
+    z-index: 1;
+    /* Ensure content is above any animated background elements */
+    position: relative;
+    /* Needed for z-index to work against static elements */
 }
 
-/* Focus state for the input field */
-.navbar .form-control:focus {
-    background-color: #495057 !important;
-    /* Slightly lighten background on focus */
-    border-color: #007bff !important;
-    /* Eye-catching blue border on focus */
-    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25) !important;
-    /* Custom focus ring */
+.App {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    /* Updated eye-catching gradient */
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    /* A darker, yet deep and vibrant gradient */
+    /* Or a brighter one, if preferred: */
+    /* background: linear-gradient(135deg, #FF6B6B, #556270); */
+    /* background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); */
+    /* background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%); */
+
+    overflow: hidden;
+    /* To prevent overflow from floating elements */
+    position: relative;
+    /* Needed for absolute positioning of floating elements */
 }
 
-/* Hover state for the entire input group (optional, if you want a subtle glow) */
-.navbar .input-group:hover .input-group-text,
-.navbar .input-group:hover .form-control {
-    border-color: #6c757d !important;
-    /* Slightly lighter border on hover */
+/* Basic styling for main content area to sit on top of the background */
+.App main {
+    flex-grow: 1;
+    padding: 20px;
+    color: #fff;
+    /* z-index is handled by the wrapper div in HomePage.js now */
+    /* position: relative; */
 }
+
+/* Styling for the animated background blobs */
+.animated-blob {
+    /* Styles are mostly inline in HomePage.js, but you can add base styles here */
+    position: absolute;
+    /* You might add more styles here if needed, e.g., default size if not inline */
+}
+
+
+/* Styles for the new thesis upload box on the homepage */
+.upload-thesis-box {
+    background-color: rgba(0, 0, 0, 0.4);
+    /* Semi-transparent dark background */
+    border: 2px dashed rgba(255, 255, 255, 0.5);
+    /* Dashed white border */
+    padding: 3rem 2rem;
+    /* More padding for a spacious feel */
+    width: 100%;
+    /* Take full width of parent flex item */
+    max-width: 600px;
+    /* Limit max width for better readability */
+    margin: 2rem auto 0 auto;
+    /* Center it below the heading, add top margin */
+    box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.3);
+    /* Subtle shadow for depth */
+    transition: all 0.3s ease;
+    /* Smooth transition for hover effects */
+}
+
+.upload-thesis-box:hover {
+    border-color: #007bff;
+    /* Highlight border on hover */
+    box-shadow: 0px 0px 25px rgba(0, 123, 255, 0.4);
+    /* More prominent shadow on hover */
+}
+
+.upload-thesis-box .file-display p {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #e9ecef;
+    /* Lighter text for the prompt */
+}
+
+.upload-thesis-box .file-display small {
+    color: #ced4da;
+    /* Slightly muted text for file size */
+}
+
+.upload-thesis-box .btn-primary {
+    min-width: 200px;
+    /* Give the button a fixed width */
+}
+
+
+/* ... (rest of your global styles like navbar search input, animated-blob etc.) ... */
