@@ -4,8 +4,8 @@ const mongoose = require('mongoose');
 
 const ThesisSchema = new mongoose.Schema({
     user: {
-        type: mongoose.Schema.Types.ObjectId, // This will link the thesis to a specific user
-        ref: 'User', // References the 'User' model
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User', // References the User model
         required: true
     },
     title: {
@@ -15,29 +15,37 @@ const ThesisSchema = new mongoose.Schema({
     },
     abstract: {
         type: String,
-        required: true
+        required: true,
+        trim: true
     },
     keywords: {
         type: [String], // Array of strings
         default: []
     },
-    filePath: {
-        type: String, // Path where the file is stored on the server
+    filePath: { // Path to the uploaded PDF file on the server
+        type: String,
         required: true
     },
-    fileName: {
-        type: String, // Original name of the file
+    fileName: { // Original name of the uploaded file
+        type: String,
         required: true
     },
     uploadDate: {
         type: Date,
         default: Date.now
     },
-    // You can add more fields as needed, e.g., 'status', 'aiSummary', 'citations'
     status: {
         type: String,
-        enum: ['pending', 'approved', 'rejected'], // Example statuses
+        enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
+    },
+    plagiarismResult: { // Field to store plagiarism check results
+        type: String,
+        default: null
+    },
+    grammarResult: { // ADDED: Field to store grammar correction results
+        type: String, // Will store the text output from the AI model
+        default: null // Default to null until checked
     }
 });
 
