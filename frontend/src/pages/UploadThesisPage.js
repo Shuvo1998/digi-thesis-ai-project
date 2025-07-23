@@ -72,7 +72,7 @@ const UploadThesisPage = () => {
                 message: 'You must be logged in to upload a thesis. Redirecting to login.',
                 type: 'error',
             });
-            setTimeout(() => navigate('/login'), 3000);
+            setTimeout(() => navigate('/login'), 1500);
             return;
         }
 
