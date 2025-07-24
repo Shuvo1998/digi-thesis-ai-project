@@ -4,7 +4,8 @@ import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faDownload, faCheckCircle, faTimesCircle, faTrash, faPenFancy,
-    faClipboardCheck, faUserGraduate, faBuilding, faCalendarAlt, faGlobe // Added new icons
+    faClipboardCheck, faUserGraduate, faBuilding, faCalendarAlt, faGlobe,
+    faSpinner // <--- ADDED THIS IMPORT
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 
