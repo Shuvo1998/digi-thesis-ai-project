@@ -3,7 +3,10 @@ import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBookOpenReader, faUserPlus, faSignInAlt, faSignOutAlt, faUpload, faTachometerAlt, faSearch, faClipboardList, faUserCircle } from '@fortawesome/free-solid-svg-icons';
+import {
+    faBookOpenReader, faUserPlus, faSignInAlt, faSignOutAlt, faUpload,
+    faTachometerAlt, faSearch, faClipboardList, faUserCircle, faTimesCircle // Added faTimesCircle
+} from '@fortawesome/free-solid-svg-icons';
 
 const Header = () => {
     const { user, logout } = useContext(UserContext);
@@ -15,7 +18,7 @@ const Header = () => {
     const navbarCollapseRef = useRef(null);
     const navbarTogglerRef = useRef(null);
 
-    // Effect to handle clicks outside the collapsed navbar (remains as intended)
+    // Effect to handle clicks outside the collapsed navbar
     useEffect(() => {
         const handleClickOutside = (event) => {
             // Check if the navbar collapse is currently open (has the 'show' class)
@@ -44,19 +47,21 @@ const Header = () => {
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
-    }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
-
-    // Removed handleMouseLeaveNavbar function as per user request.
+    }, []);
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
+    };
+
+    const handleClearSearch = () => {
+        setSearchQuery('');
     };
 
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         if (searchQuery.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setSearchQuery('');
+            setSearchQuery(''); // Clear search query after submission
         }
     };
 
@@ -77,13 +82,11 @@ const Header = () => {
     return (
         <nav className="navbar navbar-expand-lg navbar-dark bg-transparent py-3 sticky-top">
             <div className="container-fluid">
-                {/* Apply active class to brand link if it's the home page */}
                 <Link className={`navbar-brand d-flex align-items-center ${isActive('/') ? 'active' : ''}`} to="/">
                     <FontAwesomeIcon icon={faBookOpenReader} size="2x" className="me-2 brand-icon" />
                     <span className="fw-bold fs-4">DigiThesis AI</span>
                 </Link>
 
-                {/* Toggle Button Refinement: Added ref to the toggler button */}
                 <button
                     ref={navbarTogglerRef}
                     className="navbar-toggler"
@@ -97,15 +100,13 @@ const Header = () => {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
-                {/* Navbar Collapse Div Refinement: Added ref, removed onMouseLeave */}
                 <div
                     ref={navbarCollapseRef}
                     className="collapse navbar-collapse ms-auto"
                     id="navbarNav"
-                // onMouseLeave={handleMouseLeaveNavbar} // This line has been removed
                 >
                     <form className="d-flex my-2 my-lg-0 me-lg-3" role="search" onSubmit={handleSearchSubmit}>
-                        <div className="input-group">
+                        <div className="input-group search-input-group"> {/* Added search-input-group class */}
                             <input
                                 className="form-control navbar-search-input"
                                 type="search"
@@ -114,6 +115,16 @@ const Header = () => {
                                 value={searchQuery}
                                 onChange={handleSearchChange}
                             />
+                            {searchQuery && ( // Conditionally render clear button
+                                <button
+                                    type="button"
+                                    className="btn clear-search-btn"
+                                    onClick={handleClearSearch}
+                                    aria-label="Clear search"
+                                >
+                                    <FontAwesomeIcon icon={faTimesCircle} />
+                                </button>
+                            )}
                             <button className="btn btn-outline-light input-group-text" type="submit">
                                 <FontAwesomeIcon icon={faSearch} />
                             </button>
@@ -124,20 +135,17 @@ const Header = () => {
                         {user ? (
                             <>
                                 <li className="nav-item">
-                                    {/* Conditionally apply 'active' class */}
                                     <Link className={`nav-link text-white ${isActive('/dashboard') ? 'active' : ''}`} to="/dashboard">
                                         <FontAwesomeIcon icon={faTachometerAlt} className="me-1" /> Dashboard
                                     </Link>
                                 </li>
                                 <li className="nav-item">
-                                    {/* Conditionally apply 'active' class */}
                                     <Link className={`nav-link text-white ${isActive('/upload-thesis') ? 'active' : ''}`} to="/upload-thesis">
                                         <FontAwesomeIcon icon={faUpload} className="me-1" /> Upload Thesis
                                     </Link>
                                 </li>
                                 {(user.role === 'admin' || user.role === 'supervisor') && (
                                     <li className="nav-item">
-                                        {/* Conditionally apply 'active' class */}
                                         <Link className={`nav-link text-white ${isActive('/admin-dashboard') ? 'active' : ''}`} to="/admin-dashboard">
                                             <FontAwesomeIcon icon={faClipboardList} className="me-1" /> Admin Dashboard
                                         </Link>
@@ -158,13 +166,11 @@ const Header = () => {
                         ) : (
                             <>
                                 <li className="nav-item">
-                                    {/* For buttons, using 'active-btn' for distinct styling if needed */}
                                     <Link className={`btn btn-outline-light ${isActive('/login') ? 'active-btn' : ''}`} to="/login">
                                         <FontAwesomeIcon icon={faSignInAlt} className="me-2" /> Login
                                     </Link>
                                 </li>
                                 <li className="nav-item ms-lg-2">
-                                    {/* For buttons, using 'active-btn' for distinct styling if needed */}
                                     <Link className={`btn btn-success ${isActive('/register') ? 'active-btn' : ''}`} to="/register">
                                         <FontAwesomeIcon icon={faUserPlus} className="me-1" /> Register
                                     </Link>

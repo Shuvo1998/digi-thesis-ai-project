@@ -209,14 +209,30 @@ p {
     /* Subtle glow */
 }
 
-/* Navbar Search Input */
+/* --- Search Input Group Enhancements (NEW) --- */
+.search-input-group {
+    position: relative;
+    /* For positioning the clear button */
+    display: flex;
+    /* Ensure flex behavior for input and buttons */
+    align-items: center;
+    width: 100%;
+    /* Take full width of its parent form */
+}
+
 .navbar-search-input {
+    flex-grow: 1;
+    /* Allow input to take available space */
+    padding-right: 2.5rem;
+    /* Make space for the clear icon */
     background-color: rgba(255, 255, 255, 0.15);
     /* Slightly lighter for input */
     border: 1px solid var(--border-color-dark-transparent);
     color: var(--text-light);
     border-radius: 8px 0 0 8px;
     /* Rounded left side */
+    transition: all 0.2s ease-in-out;
+    /* Smooth transitions for focus/hover */
 }
 
 .navbar-search-input::placeholder {
@@ -228,6 +244,26 @@ p {
     border-color: var(--accent-blue-green);
     box-shadow: var(--box-shadow-accent-focus);
     color: var(--text-light);
+}
+
+.clear-search-btn {
+    position: absolute;
+    right: 3.5rem;
+    /* Position before the search button */
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.7);
+    cursor: pointer;
+    padding: 0.5rem;
+    font-size: 1.1rem;
+    z-index: 10;
+    /* Ensure it's above the input */
+    transition: color 0.2s ease-in-out;
+}
+
+.clear-search-btn:hover {
+    color: var(--text-light);
+    /* Brighter on hover */
 }
 
 .navbar .input-group-text {
@@ -650,7 +686,7 @@ textarea.form-control {
     color: var(--primary-color);
 }
 
-/* Input group adjustments */
+/* Input group adjustments (general, not specific to navbar anymore) */
 .input-group-text {
     border-radius: 8px 0 0 8px !important;
     /* Default for input-group-text */
@@ -712,27 +748,47 @@ textarea.form-control {
         /* Full width for buttons in collapsed menu */
     }
 
+    /* Responsive search input in collapsed menu */
+    .search-input-group {
+        flex-direction: column;
+        /* Stack input and buttons vertically */
+        align-items: stretch;
+        /* Stretch items to full width */
+    }
+
     .navbar-search-input {
+        border-radius: 8px 8px 0 0 !important;
+        /* Adjust border radius for stacked input */
+        padding-right: 1rem;
+        /* Reset padding as clear button will be below */
+    }
+
+    .clear-search-btn {
+        position: static;
+        /* Remove absolute positioning */
         width: 100%;
-        /* Full width for search input in collapsed menu */
-        margin-right: 0 !important;
-        /* Remove margin */
-        border-radius: 8px 8px 0 0;
-        /* Adjust border radius */
+        /* Take full width */
+        text-align: right;
+        /* Align icon to the right */
+        padding-right: 1rem;
+        /* Add padding to the right */
+        margin-top: -1px;
+        /* Overlap border */
+        border-radius: 0 !important;
+        /* No rounding */
+        background-color: rgba(255, 255, 255, 0.1);
+        /* Give it a background */
+        border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        color: rgba(255, 255, 255, 0.8);
     }
 
     .navbar .input-group-text {
         border-radius: 0 0 8px 8px !important;
-        /* Adjust border radius */
+        /* Adjust border radius for stacked button */
         width: 100%;
         /* Full width for search button */
-    }
-
-    .navbar .input-group {
-        flex-wrap: nowrap;
-        /* Prevent wrapping of input group items */
-        flex-direction: column;
-        /* Stack input and button vertically */
+        margin-top: -1px;
+        /* Overlap border */
     }
 
     .navbar .input-group>.form-control,
@@ -746,7 +802,8 @@ textarea.form-control {
         border-bottom-right-radius: 0;
     }
 
-    .navbar .input-group>.input-group-text {
+    /* Original input-group-text for search button was already there, but ensuring it's at the bottom */
+    .navbar .input-group-text {
         margin-top: -1px;
         /* Overlap border */
     }
