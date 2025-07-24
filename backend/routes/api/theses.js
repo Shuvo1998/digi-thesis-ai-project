@@ -146,11 +146,14 @@ router.get('/pending', auth, async (req, res) => {
         }
 
         // Fetch all pending theses, populate user info
+        // Explicitly define the path and select fields for populate
         const pendingTheses = await Thesis.find({ status: 'pending' })
             .sort({ uploadDate: -1 })
-            .populate('user', ['username', 'email']);
+            .populate({
+                path: 'user',
+                select: 'username email' // Select specific fields from the user model
+            });
 
-        // Return the pending theses within a paginated structure, even if not fully paginated yet
         res.json({
             theses: pendingTheses,
             currentPage: 1, // Defaulting for now
