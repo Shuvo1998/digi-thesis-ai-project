@@ -1,12 +1,73 @@
 /* frontend/src/styles/global.css */
 
+/* --- Font Import --- */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* --- Root Variables for Theming --- */
+:root {
+    /* Backgrounds */
+    --background-gradient-start: #1a202c;
+    --background-gradient-end: #2d3748;
+    --navbar-bg: rgba(0, 0, 0, 0.4);
+    --card-bg-light: rgba(255, 255, 255, 0.95);
+    --file-upload-bg-light: rgba(0, 123, 255, 0.05);
+    --file-upload-bg-hover: rgba(0, 123, 255, 0.1);
+    --result-box-bg: #e9ecef;
+    /* Light gray for plagiarism/grammar results */
+    --input-group-text-bg: #e9ecef;
+
+    /* Text Colors */
+    --text-light: #f8f9fa;
+    /* General light text for dark backgrounds */
+    --text-dark: #212529;
+    /* General dark text for light backgrounds */
+    --heading-color: #e2e8f0;
+    /* Slightly lighter than body text for emphasis */
+    --placeholder-color: rgba(255, 255, 255, 0.6);
+    --input-text-dark: #212529;
+    /* Text color for form inputs */
+    --input-group-text-color: #495057;
+
+    /* Accent Colors */
+    --primary-color: #007bff;
+    /* Bootstrap primary blue */
+    --accent-blue-green: #66fcf1;
+    /* Futuristic blue-green for icon/hero highlight */
+    --secondary-color: #6c757d;
+    /* Bootstrap secondary grey */
+    --success-color: #28a745;
+    /* Bootstrap success green */
+    --danger-color: #dc3545;
+    /* Bootstrap danger red */
+    --info-color: #17a2b8;
+    /* Bootstrap info cyan */
+    --warning-color: #ffc107;
+    /* Bootstrap warning yellow */
+
+    /* Borders & Shadows */
+    --border-color-light: #dee2e6;
+    /* General light border */
+    --border-color-dark-transparent: rgba(255, 255, 255, 0.3);
+    /* For navbar input */
+    --border-color-input: #ced4da;
+    --border-color-file-upload: #007bff;
+    --box-shadow-navbar: 0 2px 10px rgba(0, 0, 0, 0.3);
+    --box-shadow-card: 0 4px 15px rgba(0, 0, 0, 0.1);
+    --box-shadow-card-hover: 0 12px 25px rgba(0, 0, 0, 0.25);
+    --box-shadow-button: 0 2px 5px rgba(0, 0, 0, 0.1);
+    --box-shadow-button-hover: 0 4px 10px rgba(0, 0, 0, 0.2);
+    --box-shadow-snackbar: 0 4px 8px rgba(0, 0, 0, 0.2);
+    --box-shadow-input-focus: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+    --box-shadow-accent-focus: 0 0 0 0.25rem rgba(102, 252, 241, 0.25);
+    --box-shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    --box-shadow-footer: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+
 /* --- Base Styles --- */
 body {
     font-family: 'Inter', sans-serif;
-    background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
-    /* Deep dark gradient */
-    color: #f8f9fa;
-    /* Light text color for contrast */
+    background: linear-gradient(135deg, var(--background-gradient-start) 0%, var(--background-gradient-end) 100%);
+    color: var(--text-light);
     min-height: 100vh;
     display: flex;
     flex-direction: column;
@@ -14,6 +75,8 @@ body {
     padding: 0;
     overflow-x: hidden;
     /* Prevent horizontal scroll */
+    scroll-behavior: smooth;
+    /* Smooth scrolling for anchor links */
 }
 
 /* Ensure React root and App div take full height */
@@ -42,7 +105,7 @@ h5,
 h6 {
     font-weight: 700;
     /* Bolder headings */
-    color: #e2e8f0;
+    color: var(--heading-color);
     /* Slightly lighter than body text for emphasis */
 }
 
@@ -53,18 +116,31 @@ p {
 
 /* --- Navbar Adjustments --- */
 .navbar.bg-transparent {
-    background-color: rgba(0, 0, 0, 0.4) !important;
+    background-color: var(--navbar-bg) !important;
     /* Slightly more transparent dark */
     backdrop-filter: blur(8px);
     /* Stronger frosted glass effect */
     -webkit-backdrop-filter: blur(8px);
     /* For Safari */
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--box-shadow-navbar);
     /* Subtle shadow */
 }
 
+.navbar-brand {
+    color: var(--text-light) !important;
+    font-weight: 700;
+    border-radius: 0.5rem;
+    /* Rounded corners for brand */
+    padding: 0.5rem 1rem;
+    transition: background-color 0.3s ease;
+}
+
+.navbar-brand:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+
 .navbar-brand .brand-icon {
-    color: #66fcf1;
+    color: var(--accent-blue-green);
     /* A futuristic blue-green for the icon */
     transition: transform 0.3s ease-in-out;
 }
@@ -74,31 +150,80 @@ p {
     /* Slight zoom on hover */
 }
 
+.navbar-nav .nav-link {
+    color: var(--text-light) !important;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    /* Rounded corners for nav links */
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.navbar-nav .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    color: var(--text-light) !important;
+}
+
+/* --- Active Navigation Styles (NEW) --- */
+.navbar-nav .nav-link.active {
+    color: #fff !important;
+    /* Ensure text color is white */
+    background-color: rgba(102, 252, 241, 0.2);
+    /* Use accent blue-green with transparency */
+    border-radius: 0.5rem;
+    /* Rounded corners */
+    padding: 0.75rem 1rem;
+    /* Adjust padding as needed */
+    transition: background-color 0.3s ease;
+    /* Smooth transition */
+    font-weight: 600;
+    /* Make active text a bit bolder */
+}
+
+/* Style for active brand link (DigiThesis AI title) */
+.navbar-brand.active {
+    color: #fff !important;
+    /* Ensure text color is white */
+    background-color: rgba(102, 252, 241, 0.15);
+    /* Subtle background for active brand */
+    box-shadow: 0 0 5px rgba(102, 252, 241, 0.3);
+    /* Slight glow using accent color */
+}
+
+/* Style for active button links (Login/Register) */
+.btn.active-btn {
+    background-color: #0a58ca;
+    /* A slightly darker blue for active primary button */
+    border-color: #0a58ca;
+    box-shadow: 0 0 0 0.25rem rgba(10, 88, 202, 0.25);
+    /* Subtle glow */
+}
+
+/* Navbar Search Input */
 .navbar-search-input {
     background-color: rgba(255, 255, 255, 0.15);
     /* Slightly lighter for input */
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    color: #f8f9fa;
+    border: 1px solid var(--border-color-dark-transparent);
+    color: var(--text-light);
     border-radius: 8px 0 0 8px;
     /* Rounded left side */
 }
 
 .navbar-search-input::placeholder {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--placeholder-color);
 }
 
 .navbar-search-input:focus {
     background-color: rgba(255, 255, 255, 0.25);
-    border-color: #66fcf1;
-    box-shadow: 0 0 0 0.25rem rgba(102, 252, 241, 0.25);
-    color: #f8f9fa;
+    border-color: var(--accent-blue-green);
+    box-shadow: var(--box-shadow-accent-focus);
+    color: var(--text-light);
 }
 
 .navbar .input-group-text {
     /* For the search button in header */
-    background-color: #007bff;
+    background-color: var(--primary-color);
     /* Primary blue for search button */
-    border-color: #007bff;
+    border-color: var(--primary-color);
     color: #fff;
     border-radius: 0 8px 8px 0;
     /* Rounded right side */
@@ -118,9 +243,9 @@ p {
     /* Remove default border */
     overflow: hidden;
     /* Ensure content respects border-radius */
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--card-bg-light);
     /* Slightly transparent white for content cards */
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow-card);
     /* Soft initial shadow */
 }
 
@@ -137,7 +262,7 @@ p {
 .thesis-card-custom:hover {
     transform: translateY(-8px);
     /* More pronounced lift on hover */
-    box-shadow: 0 12px 25px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--box-shadow-card-hover);
     /* Stronger shadow on hover */
 }
 
@@ -145,7 +270,7 @@ p {
     font-weight: bold;
     font-size: 1.35rem;
     /* Slightly larger title */
-    color: #007bff;
+    color: var(--primary-color);
     /* Bootstrap primary blue */
     transition: color 0.2s ease-in-out, text-decoration 0.2s ease-in-out;
 }
@@ -160,9 +285,9 @@ p {
 /* Plagiarism and Grammar Result Boxes */
 .plagiarism-result,
 .grammar-result {
-    background-color: #e9ecef;
+    background-color: var(--result-box-bg);
     /* Light gray background for results */
-    border: 1px solid #dee2e6;
+    border: 1px solid var(--border-color-light);
     /* Light border */
     padding: 0.75rem;
     border-radius: 0.5rem;
@@ -175,7 +300,7 @@ p {
     /* Preserve whitespace for grammar results */
     word-break: break-word;
     /* Break long words */
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow-inset);
     /* Inner shadow for depth */
 }
 
@@ -215,7 +340,7 @@ p {
     border-radius: 0.5rem;
     text-align: center;
     font-size: 1rem;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--box-shadow-snackbar);
     opacity: 0;
     /* Start hidden */
     visibility: hidden;
@@ -231,17 +356,17 @@ p {
 }
 
 .snackbar-success {
-    background-color: #28a745;
+    background-color: var(--snackbar-success);
     color: #fff;
 }
 
 .snackbar-error {
-    background-color: #dc3545;
+    background-color: var(--snackbar-error);
     color: #fff;
 }
 
 .snackbar-info {
-    background-color: #17a2b8;
+    background-color: var(--snackbar-info);
     color: #fff;
 }
 
@@ -254,7 +379,7 @@ p {
     /* Adjust as needed */
     padding-bottom: 100px;
     /* Adjust as needed */
-    color: #f8f9fa;
+    color: var(--text-light);
     /* Ensure text is light */
 }
 
@@ -319,22 +444,22 @@ p {
 /* Text colors for hero section */
 .hero-section h1,
 .hero-section p {
-    color: #f8f9fa;
+    color: var(--text-light);
     /* Light text for dark background */
 }
 
 .hero-section .text-success {
-    color: #66fcf1 !important;
+    color: var(--accent-blue-green) !important;
     /* Custom success color for highlight */
 }
 
 /* --- Features section cards --- */
 .features-section .card {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--card-bg-light);
     /* Slightly opaque white */
-    color: #212529;
+    color: var(--text-dark);
     /* Dark text for light card */
-    border: 1px solid #e9ecef;
+    border: 1px solid var(--border-color-light);
     transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
@@ -345,22 +470,22 @@ p {
 }
 
 .features-section .card .fa-3x {
-    color: #007bff;
+    color: var(--primary-color);
     /* Primary color for icons */
 }
 
 /* --- Public submissions section --- */
 .public-submissions-section {
-    background-color: rgba(255, 255, 255, 0.95);
+    background-color: var(--card-bg-light);
     /* Light background for content */
-    color: #212529;
+    color: var(--text-dark);
     /* Dark text */
     padding: 3rem 0;
     /* More vertical padding */
 }
 
 .public-submissions-section h2 {
-    color: #212529;
+    color: var(--text-dark);
     /* Ensure heading is dark */
     margin-bottom: 2.5rem;
     /* More space below heading */
@@ -371,18 +496,18 @@ p {
     border-radius: 8px;
     font-weight: 600;
     transition: all 0.2s ease-in-out;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--box-shadow-button);
     /* Subtle shadow on buttons */
 }
 
 .btn:hover {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--box-shadow-button-hover);
     /* More pronounced shadow on hover */
 }
 
 .btn-primary {
-    background-color: #007bff;
-    border-color: #007bff;
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .btn-primary:hover {
@@ -391,8 +516,8 @@ p {
 }
 
 .btn-success {
-    background-color: #28a745;
-    border-color: #28a745;
+    background-color: var(--success-color);
+    border-color: var(--success-color);
 }
 
 .btn-success:hover {
@@ -401,8 +526,8 @@ p {
 }
 
 .btn-danger {
-    background-color: #dc3545;
-    border-color: #dc3545;
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
 }
 
 .btn-danger:hover {
@@ -411,8 +536,8 @@ p {
 }
 
 .btn-info {
-    background-color: #17a2b8;
-    border-color: #17a2b8;
+    background-color: var(--info-color);
+    border-color: var(--info-color);
 }
 
 .btn-info:hover {
@@ -421,8 +546,8 @@ p {
 }
 
 .btn-warning {
-    background-color: #ffc107;
-    border-color: #ffc107;
+    background-color: var(--warning-color);
+    border-color: var(--warning-color);
 }
 
 .btn-warning:hover {
@@ -432,63 +557,62 @@ p {
 
 .btn-outline-light {
     /* Specific for header logout/login buttons */
-    color: #f8f9fa;
-    border-color: #f8f9fa;
+    color: var(--text-light);
+    border-color: var(--text-light);
     background-color: transparent;
 }
 
 .btn-outline-light:hover {
-    color: #1a202c;
+    color: var(--background-gradient-start);
     /* Dark text on hover */
-    background-color: #f8f9fa;
-    border-color: #f8f9fa;
+    background-color: var(--text-light);
+    border-color: var(--text-light);
 }
 
-
 .btn-outline-primary {
-    color: #007bff;
-    border-color: #007bff;
+    color: var(--primary-color);
+    border-color: var(--primary-color);
 }
 
 .btn-outline-primary:hover {
-    background-color: #007bff;
+    background-color: var(--primary-color);
     color: #fff;
 }
 
 .btn-outline-secondary {
-    color: #6c757d;
-    border-color: #6c757d;
+    color: var(--secondary-color);
+    border-color: var(--secondary-color);
 }
 
 .btn-outline-secondary:hover {
-    background-color: #6c757d;
+    background-color: var(--secondary-color);
     color: #fff;
 }
 
 .btn-outline-info {
-    color: #17a2b8;
-    border-color: #17a2b8;
+    color: var(--info-color);
+    border-color: var(--info-color);
 }
 
 .btn-outline-info:hover {
-    background-color: #17a2b8;
+    background-color: var(--info-color);
     color: #fff;
 }
 
 /* --- Form control adjustments --- */
 .form-control {
     border-radius: 8px;
-    border: 1px solid #ced4da;
+    border: 1px solid var(--border-color-input);
     padding: 0.75rem 1rem;
     background-color: #fff;
     /* Ensure light background for form inputs */
-    color: #212529;
+    color: var(--input-text-dark);
     /* Dark text for inputs */
 }
 
 .form-control:focus {
-    border-color: #007bff;
-    box-shadow: 0 0 0 0.25rem rgba(0, 123, 255, 0.25);
+    border-color: var(--primary-color);
+    box-shadow: var(--box-shadow-input-focus);
 }
 
 textarea.form-control {
@@ -497,9 +621,9 @@ textarea.form-control {
 
 /* Specific styles for the upload file area */
 .file-upload-area {
-    border: 2px dashed #007bff;
+    border: 2px dashed var(--primary-color);
     /* Dashed border for file upload */
-    background-color: rgba(0, 123, 255, 0.05);
+    background-color: var(--file-upload-bg-light);
     /* Light blue background */
     transition: all 0.2s ease-in-out;
     border-radius: 10px;
@@ -507,44 +631,44 @@ textarea.form-control {
 }
 
 .file-upload-area:hover {
-    background-color: rgba(0, 123, 255, 0.1);
+    background-color: var(--file-upload-bg-hover);
     border-color: #0056b3;
 }
 
 .file-upload-area .fa-3x {
-    color: #007bff;
+    color: var(--primary-color);
 }
 
 /* Input group adjustments */
 .input-group-text {
     border-radius: 8px 0 0 8px !important;
     /* Default for input-group-text */
-    background-color: #e9ecef;
-    border-color: #ced4da;
-    color: #495057;
+    background-color: var(--input-group-text-bg);
+    border-color: var(--border-color-input);
+    color: var(--input-group-text-color);
 }
 
 /* --- Homepage Hero Section --- */
 /* The main homepage container already has a gradient, this ensures text is visible */
 .homepage-container .hero-section h1,
 .homepage-container .hero-section p {
-    color: #f8f9fa;
+    color: var(--text-light);
     /* Light text for dark background */
 }
 
 .homepage-container .text-success {
-    color: #66fcf1 !important;
+    color: var(--accent-blue-green) !important;
     /* Custom accent color */
 }
 
 /* --- Footer styling --- */
 .footer {
     background-color: #212529;
-    color: #f8f9fa;
+    color: var(--text-light);
     padding: 20px 0;
     margin-top: auto;
     /* Pushes footer to the bottom */
-    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--box-shadow-footer);
     /* Shadow at the top */
 }
 
