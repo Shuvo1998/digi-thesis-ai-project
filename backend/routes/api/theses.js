@@ -1,150 +1,128 @@
 // backend/routes/api/theses.js
-
 const express = require('express');
 const router = express.Router();
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
-const pdf = require('pdf-parse');
-const config = require('config');
-
+const { check, validationResult } = require('express-validator'); // Import check and validationResult
 const auth = require('../../middleware/auth');
-const authorizeRole = require('../../middleware/role');
+const upload = require('../../middleware/upload'); // Multer middleware for file uploads
 const Thesis = require('../../models/Thesis');
-const User = require('../../models/User'); // Import User model to populate user info
+const User = require('../../models/User'); // Assuming you might need User model for user details
 
-// --- Multer Setup (existing) ---
-const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-        cb(null, path.join(__dirname, '..', '..', 'uploads'));
-    },
-    filename: function (req, file, cb) {
-        cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname));
-    },
-});
-
-const fileFilter = (req, file, cb) => {
-    if (file.mimetype === 'application/pdf') {
-        cb(null, true);
-    } else {
-        cb(new Error('Only PDF files are allowed!'), false);
-    }
-};
-
-const upload = multer({
-    storage: storage,
-    fileFilter: fileFilter,
-    limits: {
-        fileSize: 1024 * 1024 * 50
-    }
-});
-
-// @route   POST api/theses/upload (existing)
+// @route   POST api/theses/upload
 // @desc    Upload a new thesis
 // @access  Private
 router.post(
     '/upload',
-    auth,
-    upload.single('thesisFile'),
+    [
+        auth, // Ensure user is authenticated
+        upload.single('thesisFile'), // Handle single file upload named 'thesisFile'
+        // Validation for text fields
+        check('title', 'Thesis title is required').not().isEmpty(),
+        check('abstract', 'Abstract is required').not().isEmpty(),
+        // NEW FIELD VALIDATION
+        check('authorName', 'Author name is required').not().isEmpty(),
+        check('department', 'Department is required').not().isEmpty(),
+        check('submissionYear', 'Submission year is required and must be a 4-digit number')
+            .not().isEmpty()
+            .isLength({ min: 4, max: 4 })
+            .withMessage('Submission year must be 4 digits')
+            .isNumeric()
+            .withMessage('Submission year must be a number'),
+        check('isPublic', 'isPublic must be a boolean').isBoolean().optional() // Optional, but validate if present
+    ],
     async (req, res) => {
+        // Check for validation errors from express-validator
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            // If there are validation errors, return them
+            // Also, if a file was uploaded before validation failed, clean it up
+            if (req.file) {
+                const fs = require('fs');
+                fs.unlink(req.file.path, (err) => {
+                    if (err) console.error('Error deleting uploaded file:', err);
+                });
+            }
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        // Check if a file was actually uploaded by Multer
+        if (!req.file) {
+            return res.status(400).json({ msg: 'No thesis file uploaded' });
+        }
+
         try {
-            if (!req.file) {
-                return res.status(400).json({ msg: 'No file uploaded' });
+            // Get user from token
+            const user = await User.findById(req.user.id).select('-password');
+            if (!user) {
+                return res.status(404).json({ msg: 'User not found' });
             }
 
-            const { title, abstract, keywords } = req.body;
+            // Extract fields from req.body
+            const { title, abstract, keywords, authorName, department, submissionYear, isPublic } = req.body;
 
-            if (!title || !abstract) {
-                const uploadedFilePath = path.join(__dirname, '..', '..', 'uploads', req.file.filename);
-                if (fs.existsSync(uploadedFilePath)) {
-                    fs.unlinkSync(uploadedFilePath);
-                }
-                return res.status(400).json({ msg: 'Title and Abstract are required fields' });
-            }
-
+            // Create a new Thesis instance
             const newThesis = new Thesis({
                 user: req.user.id,
                 title,
                 abstract,
                 keywords: keywords ? keywords.split(',').map(keyword => keyword.trim()) : [],
-                filePath: path.join('uploads', req.file.filename),
+                filePath: req.file.path, // Path where Multer saved the file
                 fileName: req.file.originalname,
-                status: 'pending' // Default status for new uploads
+                fileSize: req.file.size,
+                // Assign new fields
+                authorName,
+                department,
+                submissionYear,
+                isPublic: isPublic !== undefined ? isPublic : true // Default to true if not provided
             });
 
-            await newThesis.save();
+            // Save the thesis to the database
+            const thesis = await newThesis.save();
 
-            res.status(201).json({
-                msg: 'Thesis uploaded successfully',
-                thesis: newThesis,
-            });
-
+            res.json({ msg: 'Thesis uploaded successfully', thesis });
         } catch (err) {
             console.error(err.message);
-            if (err.message === 'Only PDF files are allowed!') {
-                return res.status(400).json({ msg: err.message });
+            // If an error occurs after file upload but before saving to DB, delete the file
+            if (req.file) {
+                const fs = require('fs');
+                fs.unlink(req.file.path, (unlinkErr) => {
+                    if (unlinkErr) console.error('Error deleting uploaded file on server error:', unlinkErr);
+                });
             }
             res.status(500).send('Server Error');
         }
     }
 );
 
-// --- REORDERED ROUTES (existing) ---
 
-// @route   GET api/theses/public (existing)
-// @desc    Get all approved theses (publicly accessible)
+// @route   GET api/theses/public
+// @desc    Get all approved public theses with pagination
 // @access  Public
 router.get('/public', async (req, res) => {
     try {
-        const publicTheses = await Thesis.find({ status: 'approved' })
-            .populate('user', ['username', 'email'])
-            .sort({ uploadDate: -1 });
-        res.json(publicTheses);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 9; // Default 9 theses per page
+        const skip = (page - 1) * limit;
+
+        const totalTheses = await Thesis.countDocuments({ status: 'approved', isPublic: true });
+        const theses = await Thesis.find({ status: 'approved', isPublic: true })
+            .sort({ uploadDate: -1 }) // Sort by most recent
+            .skip(skip)
+            .limit(limit)
+            .populate('user', ['username', 'email']); // Populate user details
+
+        res.json({
+            theses,
+            currentPage: page,
+            totalPages: Math.ceil(totalTheses / limit),
+            totalTheses
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
 
-// @route   GET api/theses/pending
-// @desc    Get all pending theses with pagination (accessible by admin/supervisor)
-// @access  Private (Admin/Supervisor)
-router.get(
-    '/pending',
-    auth, // Ensure user is authenticated
-    authorizeRole('admin', 'supervisor'), // Ensure user has 'admin' or 'supervisor' role
-    async (req, res) => {
-        try {
-            const page = parseInt(req.query.page) || 1; // Current page number, default to 1
-            const limit = parseInt(req.query.limit) || 10; // Items per page, default to 10
-            const skipIndex = (page - 1) * limit; // Calculate how many documents to skip
-
-            // Get total count of pending theses for pagination info
-            const totalPendingTheses = await Thesis.countDocuments({ status: 'pending' });
-
-            // Find all theses with status 'pending'
-            // Populate the 'user' field to get username/email of the uploader
-            const pendingTheses = await Thesis.find({ status: 'pending' })
-                .populate('user', ['username', 'email']) // Get uploader details
-                .sort({ uploadDate: 1 }) // Sort by oldest first for approval queue
-                .limit(limit)
-                .skip(skipIndex);
-
-            res.json({
-                theses: pendingTheses,
-                currentPage: page,
-                totalPages: Math.ceil(totalPendingTheses / limit),
-                totalTheses: totalPendingTheses,
-            });
-        } catch (err) {
-            console.error(err.message);
-            res.status(500).send('Server Error');
-        }
-    }
-);
-
-
-// @route   GET api/theses (existing)
+// @route   GET api/theses
 // @desc    Get all theses for the authenticated user
 // @access  Private
 router.get('/', auth, async (req, res) => {
@@ -157,20 +135,53 @@ router.get('/', auth, async (req, res) => {
     }
 });
 
+// @route   GET api/theses/pending
+// @desc    Get all pending theses (for admin/supervisor)
+// @access  Private (Admin/Supervisor only)
+router.get('/pending', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
+            return res.status(403).json({ msg: 'Access denied. Not authorized for this action.' });
+        }
 
-// @route   GET api/theses/:id (existing)
-// @desc    Get a single thesis by ID (only if owned by authenticated user)
-// @access  Private
+        // Fetch all pending theses, populate user info
+        const pendingTheses = await Thesis.find({ status: 'pending' })
+            .sort({ uploadDate: -1 })
+            .populate('user', ['username', 'email']);
+
+        // Return the pending theses within a paginated structure, even if not fully paginated yet
+        res.json({
+            theses: pendingTheses,
+            currentPage: 1, // Defaulting for now
+            totalPages: 1, // Defaulting for now
+            totalTheses: pendingTheses.length
+        });
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   GET api/theses/:id
+// @desc    Get thesis by ID
+// @access  Private (User/Admin/Supervisor) or Public (if isPublic and approved)
 router.get('/:id', auth, async (req, res) => {
     try {
-        const thesis = await Thesis.findById(req.params.id);
+        const thesis = await Thesis.findById(req.params.id).populate('user', ['username', 'email']);
 
         if (!thesis) {
             return res.status(404).json({ msg: 'Thesis not found' });
         }
 
-        if (thesis.user.toString() !== req.user.id) {
-            return res.status(401).json({ msg: 'User not authorized' });
+        // Check if the thesis is public and approved
+        const isPublicAndApproved = thesis.isPublic && thesis.status === 'approved';
+
+        // Check if the logged-in user is the owner or an admin/supervisor
+        const isOwnerOrAdmin = req.user && (thesis.user._id.toString() === req.user.id || req.user.role === 'admin' || req.user.role === 'supervisor');
+
+        if (!isPublicAndApproved && !isOwnerOrAdmin) {
+            return res.status(403).json({ msg: 'Access denied. You do not have permission to view this thesis.' });
         }
 
         res.json(thesis);
@@ -184,206 +195,24 @@ router.get('/:id', auth, async (req, res) => {
 });
 
 
-// @route   POST api/theses/check-plagiarism/:id (existing)
-// @desc    Trigger plagiarism check for a thesis using Gemini API
-// @access  Private (Owner or Admin/Supervisor)
-router.post(
-    '/check-plagiarism/:id',
-    auth,
-    async (req, res) => {
-        try {
-            const thesis = await Thesis.findById(req.params.id);
-
-            if (!thesis) {
-                return res.status(404).json({ msg: 'Thesis not found' });
-            }
-
-            // Authorization: Only the owner or an admin/supervisor can trigger the check
-            if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
-                return res.status(401).json({ msg: 'User not authorized to perform this action.' });
-            }
-
-            // Construct the absolute path to the PDF file
-            const pdfFilePath = path.join(__dirname, '..', '..', thesis.filePath);
-
-            // Check if the file exists
-            if (!fs.existsSync(pdfFilePath)) {
-                return res.status(404).json({ msg: 'Thesis PDF file not found on server.' });
-            }
-
-            // Read PDF file as buffer
-            const dataBuffer = fs.readFileSync(pdfFilePath);
-
-            // Parse PDF to extract text
-            const data = await pdf(dataBuffer);
-            const thesisText = data.text;
-
-            if (!thesisText || thesisText.trim().length < 50) { // Minimum text length for meaningful check
-                return res.status(400).json({ msg: 'Could not extract sufficient text from PDF for plagiarism check.' });
-            }
-
-            // --- Call Gemini API for Plagiarism Check ---
-            const prompt = `Perform a plagiarism check on the following academic text. Identify any highly similar phrases or structures that suggest direct copying from common sources or general knowledge. Provide a summary of potential plagiarism, including any suspicious sections or a percentage of similarity if possible. If no plagiarism is found, state that clearly.
-
-      Text to check:
-      "${thesisText.substring(0, 10000)}..." // Limit text to 10,000 characters for prompt safety
-      `;
-
-            // Get Gemini API Key from config
-            const geminiApiKey = config.get('geminiApiKey');
-            if (!geminiApiKey) {
-                console.error('Gemini API Key is not defined in config/default.json');
-                return res.status(500).json({ msg: 'Server configuration error: Gemini API Key missing.' });
-            }
-
-            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
-
-            const payload = {
-                contents: [{ role: "user", parts: [{ text: prompt }] }],
-            };
-
-            const geminiResponse = await fetch(apiUrl, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-
-            const geminiResult = await geminiResponse.json();
-
-            let plagiarismResultText = 'Plagiarism check could not be completed.';
-            if (geminiResult.candidates && geminiResult.candidates.length > 0 &&
-                geminiResult.candidates[0].content && geminiResult.candidates[0].content.parts &&
-                geminiResult.candidates[0].content.parts.length > 0) {
-                plagiarismResultText = geminiResult.candidates[0].content.parts[0].text;
-            } else {
-                console.warn('Gemini API response structure unexpected:', geminiResult);
-                plagiarismResultText = `Gemini API did not return a valid result. Response: ${JSON.stringify(geminiResult)}`;
-            }
-
-            // Update the thesis document with the plagiarism result
-            thesis.plagiarismResult = plagiarismResultText;
-            await thesis.save();
-
-            res.json({
-                msg: 'Plagiarism check initiated successfully. Results saved to thesis.',
-                plagiarismResult: plagiarismResultText,
-                thesisId: thesis._id
-            });
-
-        } catch (err) {
-            console.error('Error during plagiarism check:', err.message);
-            res.status(500).send('Server Error during plagiarism check.');
-        }
-    }
-);
-
-// @route   POST api/theses/check-grammar/:id (existing)
-// @desc    Trigger grammar correction for a thesis using a simulated AI
-// @access  Private (Owner or Admin/Supervisor)
-router.post(
-    '/check-grammar/:id',
-    auth,
-    async (req, res) => {
-        try {
-            const thesis = await Thesis.findById(req.params.id);
-
-            if (!thesis) {
-                return res.status(404).json({ msg: 'Thesis not found' });
-            }
-
-            // Authorization: Only the owner or an admin/supervisor can trigger the check
-            if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
-                return res.status(401).json({ msg: 'User not authorized to perform this action.' });
-            }
-
-            // Construct the absolute path to the PDF file
-            const pdfFilePath = path.join(__dirname, '..', '..', thesis.filePath);
-
-            // Check if the file exists
-            if (!fs.existsSync(pdfFilePath)) {
-                return res.status(404).json({ msg: 'Thesis PDF file not found on server.' });
-            }
-
-            // Read PDF file as buffer
-            const dataBuffer = fs.readFileSync(pdfFilePath);
-
-            // Parse PDF to extract text
-            const data = await pdf(dataBuffer);
-            const thesisText = data.text;
-
-            if (!thesisText || thesisText.trim().length < 50) {
-                return res.status(400).json({ msg: 'Could not extract sufficient text from PDF for grammar check.' });
-            }
-
-            // --- SIMULATED Grammar Correction Logic ---
-            let grammarResultText;
-            const originalTextSnippet = thesisText.substring(0, Math.min(thesisText.length, 200)).trim();
-
-            if (originalTextSnippet.toLowerCase().includes('i has')) {
-                grammarResultText = `Original: "${originalTextSnippet}"\nCorrected: "${originalTextSnippet.replace(/i has/gi, 'I have')}"\n\nSuggestion: Corrected "i has" to "I have".`;
-            } else if (originalTextSnippet.toLowerCase().includes('they was')) {
-                grammarResultText = `Original: "${originalTextSnippet}"\nCorrected: "${originalTextSnippet.replace(/they was/gi, 'they were')}"\n\nSuggestion: Corrected "they was" to "they were".`;
-            } else if (originalTextSnippet.toLowerCase().includes('alot')) {
-                grammarResultText = `Original: "${originalTextSnippet}"\nCorrected: "${originalTextSnippet.replace(/alot/gi, 'a lot')}"\n\nSuggestion: Corrected "alot" to "a lot".`;
-            } else {
-                grammarResultText = `Original Text Snippet:\n"${originalTextSnippet}"\n\nNo significant grammar errors detected in this snippet.`;
-            }
-
-            // Simulate a delay for the "AI" processing
-            await new Promise(resolve => setTimeout(resolve, 2500));
-
-            // Update the thesis document with the grammar result
-            thesis.grammarResult = grammarResultText;
-            await thesis.save();
-
-            res.json({
-                msg: 'Simulated grammar check completed successfully. Results saved to thesis.',
-                grammarResult: grammarResultText,
-                thesisId: thesis._id
-            });
-
-        } catch (err) {
-            console.error('Error during simulated grammar check:', err.message);
-            res.status(500).send('Server Error during simulated grammar check.');
-        }
-    }
-);
-
-
-// @route   PUT api/theses/:id (existing)
-// @desc    Update a thesis (only if owned by authenticated user)
+// @route   PUT api/theses/approve/:id
+// @desc    Approve a pending thesis (Admin/Supervisor only)
 // @access  Private
-router.put('/:id', auth, async (req, res) => {
-    const { title, abstract, keywords, status } = req.body;
-
-    const thesisFields = {};
-    if (title) thesisFields.title = title;
-    if (abstract) thesisFields.abstract = abstract;
-    if (keywords) {
-        thesisFields.keywords = keywords.split(',').map(keyword => keyword.trim());
-    }
-    if (status && ['pending', 'approved', 'rejected'].includes(status)) {
-        thesisFields.status = status;
-    }
-
+router.put('/approve/:id', auth, async (req, res) => {
     try {
-        let thesis = await Thesis.findById(req.params.id);
+        const user = await User.findById(req.user.id);
+        if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
+            return res.status(403).json({ msg: 'Access denied. Not authorized for this action.' });
+        }
 
+        let thesis = await Thesis.findById(req.params.id);
         if (!thesis) {
             return res.status(404).json({ msg: 'Thesis not found' });
         }
 
-        if (thesis.user.toString() !== req.user.id) {
-            return res.status(401).json({ msg: 'User not authorized' });
-        }
-
-        thesis = await Thesis.findByIdAndUpdate(
-            req.params.id,
-            { $set: thesisFields },
-            { new: true }
-        );
-
-        res.json({ msg: 'Thesis updated successfully', thesis });
+        thesis.status = 'approved';
+        await thesis.save();
+        res.json({ msg: 'Thesis approved successfully', thesis });
     } catch (err) {
         console.error(err.message);
         if (err.kind === 'ObjectId') {
@@ -393,77 +222,107 @@ router.put('/:id', auth, async (req, res) => {
     }
 });
 
-// @route   PUT api/theses/approve/:id (existing)
-// @desc    Approve a thesis (only accessible by admin or supervisor)
-// @access  Private (Admin/Supervisor)
-router.put(
-    '/approve/:id',
-    auth,
-    authorizeRole('admin', 'supervisor'),
-    async (req, res) => {
-        try {
-            const thesis = await Thesis.findById(req.params.id);
-
-            if (!thesis) {
-                return res.status(404).json({ msg: 'Thesis not found' });
-            }
-
-            if (thesis.status === 'approved') {
-                return res.status(400).json({ msg: 'Thesis is already approved.' });
-            }
-
-            thesis.status = 'approved';
-            await thesis.save();
-
-            res.json({ msg: 'Thesis approved successfully', thesis });
-        } catch (err) {
-            console.error(err.message);
-            if (err.kind === 'ObjectId') {
-                return res.status(404).json({ msg: 'Thesis not found' });
-            }
-            res.status(500).send('Server Error');
-        }
-    }
-);
-
-
-// @route   PUT api/theses/reject/:id (existing)
-// @desc    Reject a thesis (only accessible by admin or supervisor)
-// @access  Private (Admin/Supervisor)
-router.put(
-    '/reject/:id',
-    auth,
-    authorizeRole('admin', 'supervisor'),
-    async (req, res) => {
-        try {
-            const thesis = await Thesis.findById(req.params.id);
-
-            if (!thesis) {
-                return res.status(404).json({ msg: 'Thesis not found' });
-            }
-
-            if (thesis.status === 'rejected') {
-                return res.status(400).json({ msg: 'Thesis is already rejected.' });
-            }
-
-            thesis.status = 'rejected';
-            await thesis.save();
-
-            res.json({ msg: 'Thesis rejected successfully', thesis });
-        } catch (err) {
-            console.error(err.message);
-            if (err.kind === 'ObjectId') {
-                return res.status(404).json({ msg: 'Thesis not found' });
-            }
-            res.status(500).send('Server Error');
-        }
-    }
-);
-
-
-// @route   DELETE api/theses/:id (existing)
-// @desc    Delete a thesis (only if owned by authenticated user)
+// @route   PUT api/theses/reject/:id
+// @desc    Reject a pending thesis (Admin/Supervisor only)
 // @access  Private
+router.put('/reject/:id', auth, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
+            return res.status(403).json({ msg: 'Access denied. Not authorized for this action.' });
+        }
+
+        let thesis = await Thesis.findById(req.params.id);
+        if (!thesis) {
+            return res.status(404).json({ msg: 'Thesis not found' });
+        }
+
+        thesis.status = 'rejected';
+        await thesis.save();
+        res.json({ msg: 'Thesis rejected successfully', thesis });
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Thesis not found' });
+        }
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/theses/check-plagiarism/:id
+// @desc    Check plagiarism for a thesis
+// @access  Private (Owner, Admin, Supervisor)
+router.post('/check-plagiarism/:id', auth, async (req, res) => {
+    try {
+        const thesis = await Thesis.findById(req.params.id);
+
+        if (!thesis) {
+            return res.status(404).json({ msg: 'Thesis not found' });
+        }
+
+        // Check if user is owner, admin, or supervisor
+        const user = await User.findById(req.user.id);
+        if (thesis.user.toString() !== req.user.id && user.role !== 'admin' && user.role !== 'supervisor') {
+            return res.status(401).json({ msg: 'User not authorized to perform plagiarism check on this thesis' });
+        }
+
+        // Simulate plagiarism check (replace with actual AI call)
+        const simulatedResult = Math.random() < 0.5
+            ? 'Plagiarism check complete: 15% similarity found. Review required.'
+            : 'Plagiarism check complete: 2% similarity found. No significant issues.';
+
+        thesis.plagiarismResult = simulatedResult;
+        await thesis.save();
+
+        res.json({ msg: 'Plagiarism check initiated successfully. Result updated.', result: simulatedResult });
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Thesis not found' });
+        }
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   POST api/theses/check-grammar/:id
+// @desc    Check grammar for a thesis
+// @access  Private (Owner, Admin, Supervisor)
+router.post('/check-grammar/:id', auth, async (req, res) => {
+    try {
+        const thesis = await Thesis.findById(req.params.id);
+
+        if (!thesis) {
+            return res.status(404).json({ msg: 'Thesis not found' });
+        }
+
+        // Check if user is owner, admin, or supervisor
+        const user = await User.findById(req.user.id);
+        if (thesis.user.toString() !== req.user.id && user.role !== 'admin' && user.role !== 'supervisor') {
+            return res.status(401).json({ msg: 'User not authorized to perform grammar check on this thesis' });
+        }
+
+        // Simulate grammar check (replace with actual AI call)
+        const simulatedResult = `Grammar check complete:
+- Found 3 spelling errors (e.g., 'teh' -> 'the').
+- Found 2 grammatical issues (e.g., 'He go' -> 'He goes').
+- Suggested rephrasing for clarity in paragraph 3.`;
+
+        thesis.grammarResult = simulatedResult;
+        await thesis.save();
+
+        res.json({ msg: 'Grammar check initiated successfully. Result updated.', result: simulatedResult });
+    } catch (err) {
+        console.error(err.message);
+        if (err.kind === 'ObjectId') {
+            return res.status(404).json({ msg: 'Thesis not found' });
+        }
+        res.status(500).send('Server Error');
+    }
+});
+
+// @route   DELETE api/theses/:id
+// @desc    Delete a thesis
+// @access  Private (Owner, Admin, Supervisor)
 router.delete('/:id', auth, async (req, res) => {
     try {
         const thesis = await Thesis.findById(req.params.id);
@@ -472,21 +331,24 @@ router.delete('/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Thesis not found' });
         }
 
-        if (thesis.user.toString() !== req.user.id) {
-            return res.status(401).json({ msg: 'User not authorized' });
+        const user = await User.findById(req.user.id);
+
+        // Check if user is owner OR admin/supervisor
+        if (thesis.user.toString() !== req.user.id && user.role !== 'admin' && user.role !== 'supervisor') {
+            return res.status(401).json({ msg: 'User not authorized to delete this thesis' });
         }
 
-        const filePathToDelete = path.join(__dirname, '..', '..', thesis.filePath);
-        if (fs.existsSync(filePathToDelete)) {
-            fs.unlinkSync(filePathToDelete);
-            console.log(`Deleted file: ${filePathToDelete}`);
-        } else {
-            console.warn(`File not found for deletion: ${filePathToDelete}`);
-        }
+        // Remove the file from the server's uploads directory
+        const fs = require('fs');
+        fs.unlink(thesis.filePath, async (err) => {
+            if (err) {
+                console.error('Error deleting thesis file from server:', err);
+                // Even if file deletion fails, proceed to delete from DB
+            }
+            await thesis.deleteOne(); // Use deleteOne() instead of remove()
+            res.json({ msg: 'Thesis removed' });
+        });
 
-        await Thesis.deleteOne({ _id: req.params.id });
-
-        res.json({ msg: 'Thesis removed' });
     } catch (err) {
         console.error(err.message);
         if (err.kind === 'ObjectId') {
@@ -495,5 +357,61 @@ router.delete('/:id', auth, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-// ADDED: Missing closing curly brace for the router.delete callback function
+
+// @route   GET api/theses/search
+// @desc    Search for approved public theses by title, abstract, keywords, author, department, year
+// @access  Public
+router.get('/search', async (req, res) => {
+    try {
+        const { q } = req.query; // Get search query from query parameters
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 9;
+        const skip = (page - 1) * limit;
+
+        if (!q) {
+            return res.status(400).json({ msg: 'Search query (q) is required' });
+        }
+
+        // Create a case-insensitive regex for searching across multiple fields
+        const searchRegex = new RegExp(q, 'i');
+
+        const query = {
+            status: 'approved',
+            isPublic: true, // Only search public and approved theses
+            $or: [
+                { title: { $regex: searchRegex } },
+                { abstract: { $regex: searchRegex } },
+                { keywords: { $in: [searchRegex] } }, // Search within keywords array
+                { authorName: { $regex: searchRegex } }, // Search by author name
+                { department: { $regex: searchRegex } }, // Search by department
+                { submissionYear: isNaN(parseInt(q)) ? null : parseInt(q) } // Search by year if query is a number
+            ]
+        };
+
+        // Remove submissionYear from $or if q is not a valid number, to avoid searching null
+        if (isNaN(parseInt(q))) {
+            query.$or = query.$or.filter(item => !item.submissionYear);
+        }
+
+        const totalTheses = await Thesis.countDocuments(query);
+        const theses = await Thesis.find(query)
+            .sort({ uploadDate: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate('user', ['username', 'email']);
+
+        res.json({
+            theses,
+            currentPage: page,
+            totalPages: Math.ceil(totalTheses / limit),
+            totalTheses
+        });
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+
 module.exports = router;
