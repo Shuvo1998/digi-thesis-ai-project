@@ -1,7 +1,7 @@
 // frontend/src/context/UserContext.js
 import React, { createContext, useState, useEffect, useCallback } from 'react';
 import setAuthToken from '../utils/setAuthToken';
-import jwtDecode from 'jwt-decode';
+import { jwtDecode } from 'jwt-decode'; // CORRECTED: Use named import for jwtDecode
 import axios from 'axios';
 
 export const UserContext = createContext();
@@ -30,7 +30,7 @@ export const UserProvider = ({ children }) => {
                 }
 
                 // UPDATED: Use the live Render backend URL
-                const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/auth');
+                const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth');
                 const userDataFromBackend = res.data;
 
                 const newUserState = {
@@ -63,7 +63,7 @@ export const UserProvider = ({ children }) => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/auth');
+            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth');
             const userDataFromBackend = res.data;
 
             const newUserState = {
