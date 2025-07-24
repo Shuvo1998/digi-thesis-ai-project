@@ -4,26 +4,85 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const config = require('config'); // For accessing jwtSecret
+const config = require('config');
 const { check, validationResult } = require('express-validator');
 
-const auth = require('../../middleware/auth'); // Our authentication middleware
-const User = require('../../models/User'); // User Model
+const auth = require('../../middleware/auth'); // Import auth middleware
+const User = require('../../models/User');
 
 // @route   GET api/auth
-// @desc    Get user by token (for authenticated users)
+// @desc    Get authenticated user profile (by token)
 // @access  Private
 router.get('/', auth, async (req, res) => {
     try {
-        // req.user.id comes from our auth middleware
-        // .select('-password') excludes the password from the returned user object
+        // req.user.id is available from the auth middleware
+        // .select('-password') excludes the password field from the returned user object
         const user = await User.findById(req.user.id).select('-password');
-        res.json(user);
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json(user); // Returns user object with id, username, email, role
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
     }
 });
+
+// @route   PUT api/auth/profile
+// @desc    Update authenticated user's profile
+// @access  Private
+router.put(
+    '/profile',
+    auth, // Ensure user is authenticated
+    [
+        // Optional validation for fields that can be updated
+        check('username', 'Username is required').optional().not().isEmpty(),
+        check('email', 'Please include a valid email').optional().isEmail(),
+        // Password update would be a separate, more secure process
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { username, email } = req.body;
+        const userFields = {};
+
+        if (username) userFields.username = username;
+        if (email) userFields.email = email;
+
+        try {
+            let user = await User.findById(req.user.id);
+
+            if (!user) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+
+            // Check if email is being updated and if it already exists for another user
+            if (email && email !== user.email) {
+                let existingUserWithEmail = await User.findOne({ email });
+                if (existingUserWithEmail && existingUserWithEmail.id.toString() !== user.id.toString()) {
+                    return res.status(400).json({ errors: [{ msg: 'Email already in use by another account.' }] });
+                }
+            }
+
+            // Update user profile
+            user = await User.findByIdAndUpdate(
+                req.user.id,
+                { $set: userFields },
+                { new: true, runValidators: true } // new: true returns the updated document; runValidators: true runs schema validators
+            ).select('-password'); // Exclude password from the response
+
+            res.json({ msg: 'Profile updated successfully', user });
+
+        } catch (err) {
+            console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    }
+);
+
 
 // @route   POST api/auth/register
 // @desc    Register user
@@ -48,6 +107,7 @@ router.post(
 
         try {
             let user = await User.findOne({ email });
+
             if (user) {
                 return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
             }
@@ -56,7 +116,7 @@ router.post(
                 username,
                 email,
                 password,
-                // Role will default to 'user' as per UserSchema definition
+                role: 'user' // Default role for new registrations
             });
 
             const salt = await bcrypt.genSalt(10);
@@ -64,21 +124,23 @@ router.post(
 
             await user.save();
 
-            // Payload for JWT (ADDED role here)
             const payload = {
                 user: {
                     id: user.id,
-                    role: user.role // ADDED: Include the user's role in the JWT payload
+                    role: user.role, // Include role in JWT payload
+                    username: user.username, // Include username in JWT payload
+                    email: user.email // Include email in JWT payload
                 },
             };
 
             jwt.sign(
                 payload,
                 config.get('jwtSecret'),
-                { expiresIn: '1h' }, // Token expires in 1 hour
+                { expiresIn: '5h' }, // Increased to 5 hours for better testing flow
                 (err, token) => {
                     if (err) throw err;
-                    res.json({ token });
+                    // Send token and the full user object (excluding password)
+                    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
                 }
             );
         } catch (err) {
@@ -107,30 +169,34 @@ router.post(
 
         try {
             let user = await User.findOne({ email });
+
             if (!user) {
                 return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
             }
 
             const isMatch = await bcrypt.compare(password, user.password);
+
             if (!isMatch) {
                 return res.status(400).json({ errors: [{ msg: 'Invalid Credentials' }] });
             }
 
-            // Payload for JWT (ADDED role here)
             const payload = {
                 user: {
                     id: user.id,
-                    role: user.role // ADDED: Include the user's role in the JWT payload
+                    role: user.role, // Include role in JWT payload
+                    username: user.username, // Include username in JWT payload
+                    email: user.email // Include email in JWT payload
                 },
             };
 
             jwt.sign(
                 payload,
                 config.get('jwtSecret'),
-                { expiresIn: '1h' }, // Token expires in 1 hour
+                { expiresIn: '5h' }, // Increased to 5 hours for better testing flow
                 (err, token) => {
                     if (err) throw err;
-                    res.json({ token });
+                    // Send token and the full user object (excluding password)
+                    res.json({ token, user: { id: user.id, username: user.username, email: user.email, role: user.role } });
                 }
             );
         } catch (err) {

@@ -13,7 +13,8 @@ import UploadThesisPage from './pages/UploadThesisPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ViewThesisPage from './pages/ViewThesisPage';
-import SearchPage from './pages/SearchPage'; // <-- IMPORT NEW SEARCH PAGE
+import SearchPage from './pages/SearchPage';
+import ProfilePage from './pages/ProfilePage'; // <-- IMPORT NEW PROFILE PAGE
 
 // Import global styles and Bootstrap CSS
 import './styles/global.css';
@@ -33,7 +34,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/thesis/:id" element={<ViewThesisPage />} />
-            <Route path="/search" element={<SearchPage />} /> {/* <-- ADDED: Public route for search results */}
+            <Route path="/search" element={<SearchPage />} />
 
             {/* Protected Routes (Wrap with PrivateRoute) */}
             <Route
@@ -57,6 +58,14 @@ function App() {
               element={
                 <PrivateRoute>
                   <AdminDashboardPage />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/profile" // <-- ADDED: Protected route for user profile
+              element={
+                <PrivateRoute>
+                  <ProfilePage /> {/* Render the new ProfilePage */}
                 </PrivateRoute>
               }
             />

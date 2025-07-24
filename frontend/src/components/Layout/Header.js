@@ -1,5 +1,5 @@
 // frontend/src/components/Layout/Header.js
-import React, { useContext, useState, useEffect, useRef } from 'react'; // Added useEffect, useRef
+import React, { useContext, useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { UserContext } from '../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -9,8 +9,8 @@ const Header = () => {
     const { user, logout } = useContext(UserContext);
     const navigate = useNavigate();
     const [searchQuery, setSearchQuery] = useState('');
-    const [isNavOpen, setIsNavOpen] = useState(false); // State to track if navbar is open
-    const navbarRef = useRef(null); // Ref for the entire navbar element
+    const [isNavOpen, setIsNavOpen] = useState(false);
+    const navbarRef = useRef(null);
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
@@ -22,8 +22,7 @@ const Header = () => {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
             setSearchQuery('');
         }
-        // Close navbar after search on mobile
-        if (window.innerWidth < 992) { // Bootstrap's 'lg' breakpoint is 992px
+        if (window.innerWidth < 992) {
             setIsNavOpen(false);
         }
     };
@@ -31,48 +30,40 @@ const Header = () => {
     const handleLogout = () => {
         logout();
         navigate('/login');
-        // Close navbar after logout on mobile
         if (window.innerWidth < 992) {
             setIsNavOpen(false);
         }
     };
 
-    // Toggle navbar state
     const toggleNavbar = () => {
         setIsNavOpen(!isNavOpen);
     };
 
-    // Effect to handle clicks outside the navbar
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // If navbar is open AND click is outside the navbar element
             if (isNavOpen && navbarRef.current && !navbarRef.current.contains(event.target)) {
-                setIsNavOpen(false); // Close the navbar
+                setIsNavOpen(false);
             }
         };
 
-        // Add event listener when component mounts
         document.addEventListener('mousedown', handleClickOutside);
 
-        // Clean up event listener when component unmounts
         return () => {
             document.removeEventListener('mousedown', handleClickOutside);
         };
-    }, [isNavOpen]); // Re-run effect if isNavOpen changes
+    }, [isNavOpen]);
 
-    // Function to close navbar when a nav link is clicked (for mobile)
     const handleNavLinkClick = () => {
         if (window.innerWidth < 992) {
             setIsNavOpen(false);
         }
     };
 
-
     return (
-        <nav className="navbar navbar-expand-lg navbar-dark bg-transparent py-3 sticky-top" ref={navbarRef}> {/* Attach ref to navbar */}
+        <nav className="navbar navbar-expand-lg navbar-dark bg-transparent py-3 sticky-top" ref={navbarRef}>
             <div className="container-fluid">
                 {/* Brand Logo and Name */}
-                <Link className="navbar-brand d-flex align-items-center" to="/" onClick={handleNavLinkClick}> {/* Add onClick to close nav */}
+                <Link className="navbar-brand d-flex align-items-center" to="/" onClick={handleNavLinkClick}>
                     <FontAwesomeIcon icon={faBookOpenReader} size="2x" className="me-2 brand-icon" />
                     <span className="fw-bold fs-4">DigiThesis AI</span>
                 </Link>
@@ -84,15 +75,15 @@ const Header = () => {
                     data-bs-toggle="collapse"
                     data-bs-target="#navbarNav"
                     aria-controls="navbarNav"
-                    aria-expanded={isNavOpen} // Control aria-expanded with state
+                    aria-expanded={isNavOpen}
                     aria-label="Toggle navigation"
-                    onClick={toggleNavbar} // Toggle our state
+                    onClick={toggleNavbar}
                 >
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
                 {/* Navbar Links and Search - PUSHED TO RIGHT */}
-                <div className={`collapse navbar-collapse ms-auto ${isNavOpen ? 'show' : ''}`} id="navbarNav"> {/* Use state to apply 'show' class */}
+                <div className={`collapse navbar-collapse ms-auto ${isNavOpen ? 'show' : ''}`} id="navbarNav">
 
                     {/* Search Form - Placed FIRST within the right-aligned group */}
                     <form className="d-flex my-2 my-lg-0 me-lg-3" role="search" onSubmit={handleSearchSubmit}>
@@ -116,22 +107,28 @@ const Header = () => {
                         {/* Conditional Links based on Authentication */}
                         {user ? (
                             <>
+                                {/* My Profile Link - ADDED */}
+                                <li className="nav-item">
+                                    <Link className="nav-link text-white" to="/profile" onClick={handleNavLinkClick}>
+                                        <FontAwesomeIcon icon={faUserCircle} className="me-1" /> My Profile
+                                    </Link>
+                                </li>
                                 {/* Dashboard Link */}
                                 <li className="nav-item">
-                                    <Link className="nav-link text-white" to="/dashboard" onClick={handleNavLinkClick}> {/* Add onClick to close nav */}
+                                    <Link className="nav-link text-white" to="/dashboard" onClick={handleNavLinkClick}>
                                         <FontAwesomeIcon icon={faTachometerAlt} className="me-1" /> Dashboard
                                     </Link>
                                 </li>
                                 {/* Upload Thesis Link */}
                                 <li className="nav-item">
-                                    <Link className="nav-link text-white" to="/upload-thesis" onClick={handleNavLinkClick}> {/* Add onClick to close nav */}
+                                    <Link className="nav-link text-white" to="/upload-thesis" onClick={handleNavLinkClick}>
                                         <FontAwesomeIcon icon={faUpload} className="me-1" /> Upload Thesis
                                     </Link>
                                 </li>
                                 {/* Admin Dashboard Link (Conditional by Role) */}
                                 {(user.role === 'admin' || user.role === 'supervisor') && (
                                     <li className="nav-item">
-                                        <Link className="nav-link text-white" to="/admin-dashboard" onClick={handleNavLinkClick}> {/* Add onClick to close nav */}
+                                        <Link className="nav-link text-white" to="/admin-dashboard" onClick={handleNavLinkClick}>
                                             <FontAwesomeIcon icon={faClipboardList} className="me-1" /> Admin Dashboard
                                         </Link>
                                     </li>
@@ -154,13 +151,13 @@ const Header = () => {
                             <>
                                 {/* Login Link - Matches image "Sign in" button style */}
                                 <li className="nav-item">
-                                    <Link className="btn btn-outline-light" to="/login" onClick={handleNavLinkClick}> {/* Add onClick to close nav */}
+                                    <Link className="btn btn-outline-light" to="/login" onClick={handleNavLinkClick}>
                                         <FontAwesomeIcon icon={faSignInAlt} className="me-2" /> Login
                                     </Link>
                                 </li>
                                 {/* Register Link - Matches image "Sign up" button style */}
                                 <li className="nav-item ms-lg-2">
-                                    <Link className="btn btn-success" to="/register" onClick={handleNavLinkClick}> {/* Add onClick to close nav */}
+                                    <Link className="btn btn-success" to="/register" onClick={handleNavLinkClick}>
                                         <FontAwesomeIcon icon={faUserPlus} className="me-1" /> Register
                                     </Link>
                                 </li>
