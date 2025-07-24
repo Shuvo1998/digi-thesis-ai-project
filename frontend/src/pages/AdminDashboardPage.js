@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'; // ADDED: Import FontAwesomeIcon component
 import {
     faCheckCircle, faTimesCircle, faDownload, faSpinner,
     faClipboardList, faUserGraduate, faCalendarAlt, faTags, faFilePdf,
@@ -62,6 +62,9 @@ const AdminDashboardPage = () => {
                 message: 'Access Denied: You do not have permission to view this page.',
                 type: 'error',
             });
+            // IMPORTANT: Set loading states to false here if authorization fails
+            setLoadingPendingTheses(false);
+            setLoadingAllUsers(false);
             // Redirect if not authorized after a short delay
             setTimeout(() => navigate('/'), 3000);
             return false;
@@ -85,7 +88,6 @@ const AdminDashboardPage = () => {
             setCurrentPendingPage(res.data.currentPage);
             setTotalPendingPages(res.data.totalPages);
             setTotalPendingThesesCount(res.data.totalTheses);
-            setLoadingPendingTheses(false);
         } catch (err) {
             console.error('Failed to fetch pending theses:', err.response ? err.response.data : err.message);
             setPendingThesesError('Failed to load pending theses. Please try again.');
@@ -94,7 +96,8 @@ const AdminDashboardPage = () => {
                 message: 'Failed to load pending theses. Please try again.',
                 type: 'error',
             });
-            setLoadingPendingTheses(false);
+        } finally {
+            setLoadingPendingTheses(false); // Ensure loading is always set to false
         }
     };
 
@@ -114,7 +117,6 @@ const AdminDashboardPage = () => {
             setCurrentUsersPage(res.data.currentPage);
             setTotalUsersPages(res.data.totalPages);
             setTotalUsersCount(res.data.totalUsers);
-            setLoadingAllUsers(false);
         } catch (err) {
             console.error('Failed to fetch all users:', err.response ? err.response.data : err.message);
             setAllUsersError('Failed to load user list. Please try again.');
@@ -123,11 +125,12 @@ const AdminDashboardPage = () => {
                 message: 'Failed to load user list. Please try again.',
                 type: 'error',
             });
-            setLoadingAllUsers(false);
+        } finally {
+            setLoadingAllUsers(false); // Ensure loading is always set to false
         }
     };
 
-    // NEW: Handle User Role Update
+    // Handle User Role Update
     const handleUserRoleChange = async (userId, newRole) => {
         // Prevent admin/supervisor from changing their own role
         if (user.id === userId) {
@@ -172,6 +175,7 @@ const AdminDashboardPage = () => {
                 fetchAllUsers(currentUsersPage, usersItemsPerPage);
             }
         } else if (!userLoading && !user) {
+            // If user context has loaded and user is not authenticated, check authorization
             checkAuthorization();
         }
     }, [user, userLoading, activeTab, currentPendingPage, pendingItemsPerPage, currentUsersPage, usersItemsPerPage]); // Added pagination states to dependencies
