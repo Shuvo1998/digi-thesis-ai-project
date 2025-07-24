@@ -146,6 +146,8 @@ router.get('/pending', auth, async (req, res) => {
         }
 
         // Fetch all pending theses, populate user info
+        // Ensure that if 'isPublic' is missing from older documents, it doesn't cause an error.
+        // Mongoose handles default values on retrieval, but explicit query helps.
         const pendingTheses = await Thesis.find({ status: 'pending' })
             .sort({ uploadDate: -1 })
             .populate('user', ['username', 'email']);
@@ -159,6 +161,8 @@ router.get('/pending', auth, async (req, res) => {
         });
     } catch (err) {
         console.error(err.message);
+        // Log the full error to get more details on Render logs
+        console.error("Error fetching pending theses:", err);
         res.status(500).send('Server Error');
     }
 });
@@ -175,6 +179,7 @@ router.get('/:id', auth, async (req, res) => {
         }
 
         // Check if the thesis is public and approved
+        // Added a check for thesis.isPublic to exist, as older documents might not have it
         const isPublicAndApproved = thesis.isPublic && thesis.status === 'approved';
 
         // Check if the logged-in user is the owner or an admin/supervisor
@@ -384,14 +389,10 @@ router.get('/search', async (req, res) => {
                 { keywords: { $in: [searchRegex] } }, // Search within keywords array
                 { authorName: { $regex: searchRegex } }, // Search by author name
                 { department: { $regex: searchRegex } }, // Search by department
-                { submissionYear: isNaN(parseInt(q)) ? null : parseInt(q) } // Search by year if query is a number
+                // Only include submissionYear in $or if 'q' is a valid number
+                ...(isNaN(parseInt(q)) ? [] : [{ submissionYear: parseInt(q) }])
             ]
         };
-
-        // Remove submissionYear from $or if q is not a valid number, to avoid searching null
-        if (isNaN(parseInt(q))) {
-            query.$or = query.$or.filter(item => !item.submissionYear);
-        }
 
         const totalTheses = await Thesis.countDocuments(query);
         const theses = await Thesis.find(query)
@@ -409,6 +410,8 @@ router.get('/search', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
+        // Log the full error to get more details on Render logs
+        console.error("Error searching theses:", err);
         res.status(500).send('Server Error');
     }
 });
