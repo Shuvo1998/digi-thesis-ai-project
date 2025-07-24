@@ -3,93 +3,172 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faUserGraduate, faCalendarAlt, faTags, faFilePdf, faSpinner,
-    faEdit, faTrashAlt, faDownload, faSearch, faLanguage, faCheckCircle, faTimesCircle
+    faDownload, faCheckCircle, faTimesCircle, faTrash, faPenFancy,
+    faClipboardCheck, faUserGraduate, faBuilding, faCalendarAlt, faGlobe // Added new icons
 } from '@fortawesome/free-solid-svg-icons';
+import { motion } from 'framer-motion';
 
 const ThesisCard = ({
     thesis,
-    isOwnerOrAdmin = false,
+    isOwnerOrAdmin = false, // Default to false if not provided
     checkingPlagiarismId = null,
     checkingGrammarId = null,
-    onPlagiarismCheck,
-    onGrammarCheck,
     onDownload,
-    onEdit,
-    onDelete,
     onApprove,
-    onReject
+    onReject,
+    onDelete,
+    onPlagiarismCheck,
+    onGrammarCheck
 }) => {
-
-    const statusClasses = {
-        'approved': 'bg-success',
-        'rejected': 'bg-danger',
-        'pending': 'bg-warning text-dark'
-    };
-
-    // Helper function for download to use the correct base URL
-    const handleDownloadInternal = (filePath, fileName) => {
-        // UPDATED: Use the live Render backend URL
-        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
-        window.open(fileUrl, '_blank');
-        // If an external onDownload handler is provided, call it too
-        if (onDownload) {
-            onDownload(filePath, fileName);
+    const cardVariants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                stiffness: 80,
+                damping: 10
+            }
+        },
+        hover: {
+            scale: 1.02, // Slightly less aggressive hover for individual cards
+            boxShadow: "0px 8px 15px rgba(0,0,0,0.15)", // Subtle shadow on hover
+            transition: {
+                duration: 0.2
+            }
         }
     };
 
+    const buttonVariants = {
+        hover: { scale: 1.05 },
+        tap: { scale: 0.95 }
+    };
+
+    const statusColors = {
+        pending: 'bg-warning text-dark',
+        approved: 'bg-success text-white',
+        rejected: 'bg-danger text-white',
+    };
+
+    const downloadFile = () => {
+        if (onDownload) {
+            onDownload(thesis.filePath, thesis.fileName);
+        } else {
+            // Fallback for public theses where onDownload might not be passed explicitly
+            // Backend URL is now hardcoded
+            const fileUrl = `https://digi-thesis-ai-project.onrender.com/${thesis.filePath.replace(/\\/g, '/')}`;
+            window.open(fileUrl, '_blank');
+        }
+    };
 
     return (
-        <div className="card h-100 shadow-sm bg-white text-dark thesis-card-custom">
+        <motion.div
+            className="card thesis-card-custom h-100 d-flex flex-column"
+            variants={cardVariants}
+            whileHover="hover"
+            initial="hidden"
+            animate="visible"
+            viewport={{ once: true, amount: 0.3 }}
+        >
             <div className="card-body d-flex flex-column">
-                <Link to={`/thesis/${thesis._id}`} className="text-decoration-none">
-                    <h5 className="card-title text-primary mb-2 thesis-title-link">{thesis.title}</h5>
-                </Link>
-                <h6 className="card-subtitle mb-2 text-muted">
-                    <FontAwesomeIcon icon={faUserGraduate} className="me-1" />
-                    Uploaded by: {thesis.user ? thesis.user.username : 'N/A'}
-                    {thesis.user && thesis.user.email && ` (${thesis.user.email})`}
-                </h6>
-                <h6 className="card-subtitle mb-2 text-muted">
-                    <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
-                    Uploaded: {new Date(thesis.uploadDate).toLocaleDateString()}
-                </h6>
-                <p className="card-text flex-grow-1 overflow-hidden" style={{ maxHeight: '6em' }}>
-                    {thesis.abstract}
-                </p>
-                {thesis.keywords && thesis.keywords.length > 0 && (
-                    <p className="card-text text-muted small">
-                        <FontAwesomeIcon icon={faTags} className="me-1" />
-                        Keywords: {thesis.keywords.join(', ')}
-                    </p>
-                )}
-
-                {thesis.plagiarismResult && (
-                    <div className="plagiarism-result mt-3 mb-2 p-2 border rounded-3 bg-light-subtle text-start overflow-auto" style={{ maxHeight: '100px', fontSize: '0.9em' }}>
-                        <strong className="text-info">Plagiarism Check Result:</strong>
-                        <p className="mb-0">{thesis.plagiarismResult}</p>
-                    </div>
-                )}
-
-                {thesis.grammarResult && (
-                    <div className="grammar-result mt-3 mb-2 p-2 border rounded-3 bg-light-subtle text-start overflow-auto" style={{ maxHeight: '100px', fontSize: '0.9em' }}>
-                        <strong className="text-info">Grammar Check Result:</strong>
-                        <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{thesis.grammarResult}</p>
-                    </div>
-                )}
-
-                <div className="mt-auto d-flex flex-wrap justify-content-between align-items-center pt-3 border-top">
-                    <span className={`badge ${statusClasses[thesis.status] || 'bg-secondary'}`}>
-                        Status: {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                    <h5 className="card-title mb-0">
+                        <Link to={`/thesis/${thesis._id}`} className="thesis-title-link">
+                            {thesis.title}
+                        </Link>
+                    </h5>
+                    <span className={`badge ${statusColors[thesis.status]} ms-3`}>
+                        {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
                     </span>
-                    <div className="d-flex flex-wrap gap-2 mt-2 mt-md-0">
+                </div>
 
-                        {isOwnerOrAdmin && (onPlagiarismCheck && (
-                            <button
+                {/* NEW: Author, Department, Year */}
+                <div className="mb-2 text-dark text-start">
+                    <p className="card-text mb-1 small text-muted">
+                        <FontAwesomeIcon icon={faUserGraduate} className="me-2" />
+                        <strong>Author:</strong> {thesis.authorName}
+                    </p>
+                    <p className="card-text mb-1 small text-muted">
+                        <FontAwesomeIcon icon={faBuilding} className="me-2" />
+                        <strong>Department:</strong> {thesis.department}
+                    </p>
+                    <p className="card-text mb-1 small text-muted">
+                        <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
+                        <strong>Year:</strong> {thesis.submissionYear}
+                    </p>
+                    {thesis.isPublic && (
+                        <p className="card-text mb-1 small text-muted">
+                            <FontAwesomeIcon icon={faGlobe} className="me-2" />
+                            <strong>Visibility:</strong> Public
+                        </p>
+                    )}
+                </div>
+
+                <p className="card-text text-muted text-start flex-grow-1">
+                    {thesis.abstract.substring(0, 150)}{thesis.abstract.length > 150 ? '...' : ''}
+                </p>
+
+                {thesis.keywords && thesis.keywords.length > 0 && (
+                    <div className="mb-3 text-start">
+                        {thesis.keywords.map((keyword, index) => (
+                            <span key={index} className="badge bg-secondary me-1 mb-1">
+                                {keyword}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+                {/* Plagiarism and Grammar Results */}
+                {(thesis.plagiarismResult && thesis.plagiarismResult !== 'Not checked') && (
+                    <div className="plagiarism-result mb-2 text-start text-dark">
+                        <strong>Plagiarism:</strong> {thesis.plagiarismResult}
+                    </div>
+                )}
+                {(thesis.grammarResult && thesis.grammarResult !== 'Not checked') && (
+                    <div className="grammar-result mb-2 text-start text-dark">
+                        <strong>Grammar:</strong> {thesis.grammarResult}
+                    </div>
+                )}
+
+                <div className="mt-auto d-flex flex-wrap justify-content-center gap-2">
+                    <motion.button
+                        className="btn btn-outline-primary btn-sm"
+                        onClick={downloadFile}
+                        variants={buttonVariants}
+                        whileHover="hover"
+                        whileTap="tap"
+                    >
+                        <FontAwesomeIcon icon={faDownload} className="me-1" /> Download
+                    </motion.button>
+
+                    {isOwnerOrAdmin && thesis.status === 'pending' && (
+                        <>
+                            <motion.button
+                                className="btn btn-success btn-sm"
+                                onClick={() => onApprove(thesis._id)}
+                                variants={buttonVariants}
+                                whileHover="hover"
+                                whileTap="tap"
+                            >
+                                <FontAwesomeIcon icon={faCheckCircle} className="me-1" /> Approve
+                            </motion.button>
+                            <motion.button
+                                className="btn btn-danger btn-sm"
+                                onClick={() => onReject(thesis._id)}
+                                variants={buttonVariants}
+                                whileHover="hover"
+                                whileTap="tap"
+                            >
+                                <FontAwesomeIcon icon={faTimesCircle} className="me-1" /> Reject
+                            </motion.button>
+                            <motion.button
                                 className="btn btn-info btn-sm"
-                                title="Check Plagiarism"
                                 onClick={() => onPlagiarismCheck(thesis._id)}
-                                disabled={checkingPlagiarismId === thesis._id || checkingGrammarId === thesis._id}
+                                variants={buttonVariants}
+                                whileHover="hover"
+                                whileTap="tap"
+                                disabled={checkingPlagiarismId === thesis._id}
                             >
                                 {checkingPlagiarismId === thesis._id ? (
                                     <>
@@ -97,18 +176,17 @@ const ThesisCard = ({
                                     </>
                                 ) : (
                                     <>
-                                        <FontAwesomeIcon icon={faSearch} className="me-1" /> Plagiarism
+                                        <FontAwesomeIcon icon={faClipboardCheck} className="me-1" /> Plagiarism Check
                                     </>
                                 )}
-                            </button>
-                        ))}
-
-                        {isOwnerOrAdmin && (onGrammarCheck && (
-                            <button
-                                className="btn btn-warning text-dark btn-sm"
-                                title="Check Grammar"
+                            </motion.button>
+                            <motion.button
+                                className="btn btn-secondary btn-sm"
                                 onClick={() => onGrammarCheck(thesis._id)}
-                                disabled={checkingGrammarId === thesis._id || checkingPlagiarismId === thesis._id}
+                                variants={buttonVariants}
+                                whileHover="hover"
+                                whileTap="tap"
+                                disabled={checkingGrammarId === thesis._id}
                             >
                                 {checkingGrammarId === thesis._id ? (
                                     <>
@@ -116,66 +194,27 @@ const ThesisCard = ({
                                     </>
                                 ) : (
                                     <>
-                                        <FontAwesomeIcon icon={faLanguage} className="me-1" /> Grammar
+                                        <FontAwesomeIcon icon={faPenFancy} className="me-1" /> Grammar Check
                                     </>
                                 )}
-                            </button>
-                        ))}
+                            </motion.button>
+                        </>
+                    )}
 
-                        {/* Use the internal handler for download */}
-                        {onDownload && (
-                            <button
-                                className="btn btn-outline-secondary btn-sm"
-                                title="Download Thesis"
-                                onClick={() => handleDownloadInternal(thesis.filePath, thesis.fileName)}
-                            >
-                                <FontAwesomeIcon icon={faDownload} />
-                            </button>
-                        )}
-
-                        {isOwnerOrAdmin && (onEdit && (
-                            <button
-                                className="btn btn-outline-primary btn-sm"
-                                title="Edit Thesis"
-                                onClick={() => onEdit(thesis._id)}
-                            >
-                                <FontAwesomeIcon icon={faEdit} />
-                            </button>
-                        ))}
-
-                        {isOwnerOrAdmin && (onDelete && (
-                            <button
-                                className="btn btn-outline-danger btn-sm"
-                                title="Delete Thesis"
-                                onClick={() => onDelete(thesis._id)}
-                            >
-                                <FontAwesomeIcon icon={faTrashAlt} />
-                            </button>
-                        ))}
-
-                        {onApprove && (
-                            <button
-                                className="btn btn-success btn-sm"
-                                title="Approve Thesis"
-                                onClick={() => onApprove(thesis._id)}
-                            >
-                                <FontAwesomeIcon icon={faCheckCircle} className="me-2" /> Approve
-                            </button>
-                        )}
-
-                        {onReject && (
-                            <button
-                                className="btn btn-danger btn-sm"
-                                title="Reject Thesis"
-                                onClick={() => onReject(thesis._id)}
-                            >
-                                <FontAwesomeIcon icon={faTimesCircle} className="me-2" /> Reject
-                            </button>
-                        )}
-                    </div>
+                    {isOwnerOrAdmin && onDelete && ( // Only show delete if onDelete prop is provided (e.g., on Dashboard)
+                        <motion.button
+                            className="btn btn-outline-danger btn-sm"
+                            onClick={() => onDelete(thesis._id)}
+                            variants={buttonVariants}
+                            whileHover="hover"
+                            whileTap="tap"
+                        >
+                            <FontAwesomeIcon icon={faTrash} className="me-1" /> Delete
+                        </motion.button>
+                    )}
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 };
 

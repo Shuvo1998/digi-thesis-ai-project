@@ -6,9 +6,10 @@ import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faBookOpen, faUserGraduate, faCalendarAlt, faTags, faFilePdf,
-    faSpinner, faClipboardList, faSearch, faLanguage, faDownload
+    faSpinner, faBookOpen, faUserGraduate, faBuilding, faCalendarAlt,
+    faTags, faFilePdf, faDownload, faClipboardCheck, faPenFancy, faEye, faEyeSlash
 } from '@fortawesome/free-solid-svg-icons';
+import { motion } from 'framer-motion';
 
 const ViewThesisPage = () => {
     const { id } = useParams();
@@ -23,125 +24,120 @@ const ViewThesisPage = () => {
         message: '',
         type: 'info',
     });
-    const [checkingPlagiarismId, setCheckingPlagiarismId] = useState(null);
-    const [checkingGrammarId, setCheckingGrammarId] = useState(null);
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
     };
 
-    const fetchThesis = async () => {
-        setLoading(true);
-        setError('');
-        try {
-            let res;
-            if (user && !userLoading) {
-                try {
-                    // UPDATED: Use the live Render backend URL
-                    res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/${id}`, {
-                        headers: { 'x-auth-token': user.token }
-                    });
-                } catch (privateErr) {
-                    console.warn("Private thesis fetch failed, attempting public:", privateErr.message);
-                    // UPDATED: Use the live Render backend URL
-                    res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/public/${id}`);
-                }
-            } else {
-                // UPDATED: Use the live Render backend URL
-                res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/public/${id}`);
+    useEffect(() => {
+        const fetchThesis = async () => {
+            if (userLoading) return; // Wait for user context to load
+
+            if (!user || !user.token) {
+                setSnackbar({
+                    show: true,
+                    message: 'You must be logged in to view thesis details. Redirecting to login.',
+                    type: 'error',
+                });
+                setTimeout(() => navigate('/login'), 3000);
+                return;
             }
 
-            setThesis(res.data);
-            setLoading(false);
-        } catch (err) {
-            console.error('Failed to fetch thesis:', err.response ? err.response.data : err.message);
-            const msg = err.response && err.response.data && err.response.data.msg
-                ? err.response.data.msg
-                : 'Failed to load thesis details. It might not exist or be publicly available.';
-            setError(msg);
-            setSnackbar({ show: true, message: msg, type: 'error' });
-            setLoading(false);
+            try {
+                setLoading(true);
+                setError('');
+                // Backend URL is now hardcoded
+                const res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/${id}`, {
+                    headers: {
+                        'x-auth-token': user.token,
+                    },
+                });
+                setThesis(res.data);
+            } catch (err) {
+                console.error('Failed to fetch thesis:', err.response ? err.response.data : err.message);
+                const errorMessage = err.response && err.response.data && err.response.data.msg
+                    ? err.response.data.msg
+                    : 'Failed to load thesis details. It might not exist or you might not have permission.';
+                setError(errorMessage);
+                setSnackbar({
+                    show: true,
+                    message: errorMessage,
+                    type: 'error',
+                });
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchThesis();
+    }, [id, user, userLoading, navigate]); // Re-run effect if ID or user changes
+
+    const handleDownload = () => {
+        if (thesis && thesis.filePath) {
+            // Backend URL is now hardcoded
+            const fileUrl = `https://digi-thesis-ai-project.onrender.com/${thesis.filePath.replace(/\\/g, '/')}`;
+            window.open(fileUrl, '_blank');
+            setSnackbar({ show: true, message: `Downloading ${thesis.fileName}...`, type: 'info' });
         }
     };
 
-    useEffect(() => {
-        if (!userLoading) {
-            fetchThesis();
-        }
-    }, [id, user, userLoading]);
-
-    const handlePlagiarismCheck = async (thesisId) => {
-        setCheckingPlagiarismId(thesisId);
-        setSnackbar({ show: false, message: '', type: 'info' });
-
+    const handlePlagiarismCheck = async () => {
         if (!user || !user.token) {
             setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
-            setCheckingPlagiarismId(null);
             return;
         }
+        if (!thesis) return;
 
         try {
-            // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`, {}, {
+            setSnackbar({ show: true, message: 'Initiating plagiarism check...', type: 'info' });
+            // Backend URL is now hardcoded
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesis._id}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
+            setThesis(prev => ({ ...prev, plagiarismResult: res.data.result }));
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchThesis();
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
                 ? err.response.data.msg
                 : 'Plagiarism check failed. Please try again.';
             setSnackbar({ show: true, message: errorMessage, type: 'error' });
-        } finally {
-            setCheckingPlagiarismId(null);
         }
     };
 
-    const handleGrammarCheck = async (thesisId) => {
-        setCheckingGrammarId(thesisId);
-        setSnackbar({ show: false, message: '', type: 'info' });
-
+    const handleGrammarCheck = async () => {
         if (!user || !user.token) {
             setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
-            setCheckingGrammarId(null);
             return;
         }
+        if (!thesis) return;
 
         try {
-            // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`, {}, {
+            setSnackbar({ show: true, message: 'Initiating grammar check...', type: 'info' });
+            // Backend URL is now hardcoded
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesis._id}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
+            setThesis(prev => ({ ...prev, grammarResult: res.data.result }));
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchThesis();
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
                 ? err.response.data.msg
                 : 'Grammar check failed. Please try again.';
             setSnackbar({ show: true, message: errorMessage, type: 'error' });
-        } finally {
-            setCheckingGrammarId(null);
         }
-    };
-
-    const handleDownload = (filePath, fileName) => {
-        // UPDATED: Use the live Render backend URL
-        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
-        window.open(fileUrl, '_blank');
-        setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
 
     if (loading || userLoading) {
         return (
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
                 <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary" />
-                <p className="ms-3 text-white">Loading Thesis...</p>
+                <p className="ms-3 text-white">Loading thesis details...</p>
             </div>
         );
     }
@@ -159,111 +155,116 @@ const ViewThesisPage = () => {
 
     if (!thesis) {
         return (
-            <div className="container py-5 text-center text-white-50">
-                <p className="lead">Thesis not found or could not be loaded.</p>
+            <div className="container py-5 text-center text-white">
+                <p className="lead">Thesis not found or no data available.</p>
                 <button className="btn btn-primary mt-3" onClick={() => navigate(-1)}>Go Back</button>
             </div>
         );
     }
 
-    const isOwnerOrAdmin = user && (thesis.user._id === user.id || user.role === 'admin' || user.role === 'supervisor');
+    const isOwner = user && thesis.user && thesis.user._id === user._id;
+    const isAdminOrSupervisor = user && (user.role === 'admin' || user.role === 'supervisor');
 
     return (
         <div className="container py-5">
             <Snackbar message={snackbar.message} type={snackbar.type} show={snackbar.show} onClose={handleCloseSnackbar} />
 
-            <div className="card p-4 shadow-lg bg-light text-dark">
-                <h2 className="card-title text-center text-primary mb-4">
+            <motion.div
+                className="card p-4 shadow-lg"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 100, damping: 10 }}
+            >
+                <h2 className="card-title text-dark mb-3">
                     <FontAwesomeIcon icon={faBookOpen} className="me-2" /> {thesis.title}
                 </h2>
 
-                <div className="card-body">
-                    <p className="card-text text-muted mb-2">
-                        <FontAwesomeIcon icon={faUserGraduate} className="me-2" />
-                        Uploaded by: {thesis.user ? thesis.user.username : 'N/A'} ({thesis.user ? thesis.user.email : 'N/A'})
+                {/* NEW: Display Author, Department, Year */}
+                <div className="mb-3 text-start text-dark">
+                    <p className="mb-1">
+                        <FontAwesomeIcon icon={faUserGraduate} className="me-2 text-primary" />
+                        <strong>Author:</strong> {thesis.authorName}
                     </p>
-                    <p className="card-text text-muted mb-4">
-                        <FontAwesomeIcon icon={faCalendarAlt} className="me-2" />
-                        Uploaded on: {new Date(thesis.uploadDate).toLocaleDateString()}
+                    <p className="mb-1">
+                        <FontAwesomeIcon icon={faBuilding} className="me-2 text-primary" />
+                        <strong>Department:</strong> {thesis.department}
                     </p>
+                    <p className="mb-1">
+                        <FontAwesomeIcon icon={faCalendarAlt} className="me-2 text-primary" />
+                        <strong>Submission Year:</strong> {thesis.submissionYear}
+                    </p>
+                    <p className="mb-1">
+                        {thesis.isPublic ? (
+                            <FontAwesomeIcon icon={faEye} className="me-2 text-success" />
+                        ) : (
+                            <FontAwesomeIcon icon={faEyeSlash} className="me-2 text-secondary" />
+                        )}
+                        <strong>Visibility:</strong> {thesis.isPublic ? 'Public' : 'Private'}
+                    </p>
+                </div>
 
-                    <h5 className="text-info mt-4 mb-2">Abstract:</h5>
-                    <p className="card-text border p-3 rounded bg-white">{thesis.abstract}</p>
+                <h5 className="text-dark text-start mt-4 mb-2">Abstract:</h5>
+                <p className="card-text text-muted text-start mb-4">{thesis.abstract}</p>
 
-                    {thesis.keywords && thesis.keywords.length > 0 && (
+                {thesis.keywords && thesis.keywords.length > 0 && (
+                    <div className="mb-4 text-start">
+                        <h5 className="text-dark mb-2">Keywords:</h5>
+                        {thesis.keywords.map((keyword, index) => (
+                            <span key={index} className="badge bg-info text-white me-1 mb-1">
+                                {keyword}
+                            </span>
+                        ))}
+                    </div>
+                )}
+
+                <div className="mb-4 text-start">
+                    <h5 className="text-dark mb-2">Uploaded By:</h5>
+                    <p className="text-muted">{thesis.user ? thesis.user.username : 'N/A'} ({thesis.user ? thesis.user.email : 'N/A'}) on {new Date(thesis.uploadDate).toLocaleDateString()}</p>
+                </div>
+
+                {/* Plagiarism and Grammar Results */}
+                <div className="mb-4 text-start">
+                    <h5 className="text-dark mb-2">Analysis Results:</h5>
+                    <div className="plagiarism-result mb-2 text-dark">
+                        <strong>Plagiarism Check:</strong> {thesis.plagiarismResult}
+                    </div>
+                    <div className="grammar-result text-dark">
+                        <strong>Grammar Check:</strong> {thesis.grammarResult}
+                    </div>
+                </div>
+
+                <div className="d-flex flex-wrap justify-content-center gap-3 mt-4">
+                    <motion.button
+                        className="btn btn-primary btn-lg"
+                        onClick={handleDownload}
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                    >
+                        <FontAwesomeIcon icon={faDownload} className="me-2" /> Download Thesis
+                    </motion.button>
+
+                    {(isOwner || isAdminOrSupervisor) && (
                         <>
-                            <h5 className="text-info mt-4 mb-2">Keywords:</h5>
-                            <p className="card-text border p-3 rounded bg-white">
-                                <FontAwesomeIcon icon={faTags} className="me-2" /> {thesis.keywords.join(', ')}
-                            </p>
-                        </>
-                    )}
-
-                    {thesis.plagiarismResult && (
-                        <>
-                            <h5 className="text-info mt-4 mb-2">Plagiarism Check Result:</h5>
-                            <div className="plagiarism-result p-3 border rounded bg-white overflow-auto" style={{ maxHeight: '150px', fontSize: '0.95em' }}>
-                                <p className="mb-0">{thesis.plagiarismResult}</p>
-                            </div>
-                        </>
-                    )}
-
-                    {thesis.grammarResult && (
-                        <>
-                            <h5 className="text-info mt-4 mb-2">Grammar Check Result:</h5>
-                            <div className="grammar-result p-3 border rounded bg-white overflow-auto" style={{ maxHeight: '150px', fontSize: '0.95em' }}>
-                                <p className="mb-0" style={{ whiteSpace: 'pre-wrap' }}>{thesis.grammarResult}</p>
-                            </div>
-                        </>
-                    )}
-
-                    {isOwnerOrAdmin && (
-                        <div className="d-flex flex-wrap justify-content-center gap-3 mt-4 pt-3 border-top">
-                            <button
+                            <motion.button
                                 className="btn btn-info btn-lg"
-                                title="Check Plagiarism"
-                                onClick={() => handlePlagiarismCheck(thesis._id)}
-                                disabled={checkingPlagiarismId === thesis._id || checkingGrammarId === thesis._id}
+                                onClick={handlePlagiarismCheck}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                {checkingPlagiarismId === thesis._id ? (
-                                    <>
-                                        <FontAwesomeIcon icon={faSpinner} spin className="me-2" /> Checking Plagiarism...
-                                    </>
-                                ) : (
-                                    <>
-                                        <FontAwesomeIcon icon={faSearch} className="me-2" /> Check Plagiarism
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                className="btn btn-warning text-dark btn-lg"
-                                title="Check Grammar"
-                                onClick={() => handleGrammarCheck(thesis._id)}
-                                disabled={checkingGrammarId === thesis._id || checkingPlagiarismId === thesis._id}
+                                <FontAwesomeIcon icon={faClipboardCheck} className="me-2" /> Run Plagiarism Check
+                            </motion.button>
+                            <motion.button
+                                className="btn btn-secondary btn-lg"
+                                onClick={handleGrammarCheck}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                             >
-                                {checkingGrammarId === thesis._id ? (
-                                    <>
-                                        <FontAwesomeIcon icon={faSpinner} spin className="me-2" /> Checking Grammar...
-                                    </>
-                                ) : (
-                                    <>
-                                        <FontAwesomeIcon icon={faLanguage} className="me-2" /> Check Grammar
-                                    </>
-                                )}
-                            </button>
-
-                            <button
-                                className="btn btn-outline-primary btn-lg"
-                                title="Download Thesis"
-                                onClick={() => handleDownload(thesis.filePath, thesis.fileName)}
-                            >
-                                <FontAwesomeIcon icon={faDownload} className="me-2" /> Download PDF
-                            </button>
-                        </div>
+                                <FontAwesomeIcon icon={faPenFancy} className="me-2" /> Run Grammar Check
+                            </motion.button>
+                        </>
                     )}
                 </div>
-            </div>
+            </motion.div>
         </div>
     );
 };
