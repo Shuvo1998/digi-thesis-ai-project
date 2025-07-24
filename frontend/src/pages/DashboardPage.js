@@ -5,9 +5,9 @@ import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faBookOpen, faSpinner // Removed other icons as they are now in ThesisCard
+    faBookOpen, faSpinner
 } from '@fortawesome/free-solid-svg-icons';
-import ThesisCard from '../components/Thesis/ThesisCard'; // ADDED: Import ThesisCard
+import ThesisCard from '../components/Thesis/ThesisCard';
 
 const DashboardPage = () => {
     const { user, loading: userLoading } = useContext(UserContext);
@@ -26,7 +26,6 @@ const DashboardPage = () => {
         setSnackbar({ ...snackbar, show: false });
     };
 
-    // Function to fetch theses from the backend
     const fetchTheses = async () => {
         if (!user || !user.token) {
             setLoadingTheses(false);
@@ -41,10 +40,11 @@ const DashboardPage = () => {
 
         try {
             setLoadingTheses(true);
-            setError(''); // Clear previous errors
-            const res = await axios.get('http://localhost:5000/api/theses', {
+            setError('');
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/theses', {
                 headers: {
-                    'x-auth-token': user.token, // Send the JWT for authentication
+                    'x-auth-token': user.token,
                 },
             });
             setTheses(res.data);
@@ -61,7 +61,6 @@ const DashboardPage = () => {
         }
     };
 
-    // Fetch theses when the component mounts or user changes
     useEffect(() => {
         if (!userLoading && user) {
             fetchTheses();
@@ -75,7 +74,6 @@ const DashboardPage = () => {
         }
     }, [user, userLoading]);
 
-    // --- Handle Plagiarism Check (existing) ---
     const handlePlagiarismCheck = async (thesisId) => {
         setCheckingPlagiarismId(thesisId);
         setSnackbar({ show: false, message: '', type: 'info' });
@@ -87,13 +85,14 @@ const DashboardPage = () => {
         }
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/theses/check-plagiarism/${thesisId}`, {}, {
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-plagiarism/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchTheses(); // Re-fetch thesis to update the plagiarismResult on the card
+            fetchTheses();
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
@@ -105,7 +104,6 @@ const DashboardPage = () => {
         }
     };
 
-    // --- Handle Grammar Check (existing) ---
     const handleGrammarCheck = async (thesisId) => {
         setCheckingGrammarId(thesisId);
         setSnackbar({ show: false, message: '', type: 'info' });
@@ -117,13 +115,14 @@ const DashboardPage = () => {
         }
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/theses/check-grammar/${thesisId}`, {}, {
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-grammar/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchTheses(); // Re-fetch thesis to update the grammarResult on the card
+            fetchTheses();
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
@@ -135,7 +134,6 @@ const DashboardPage = () => {
         }
     };
 
-    // Placeholder functions for future features (existing)
     const handleEdit = (thesisId) => {
         console.log('Edit thesis:', thesisId);
         setSnackbar({ show: true, message: `Edit functionality for thesis ${thesisId} coming soon!`, type: 'info' });
@@ -144,13 +142,14 @@ const DashboardPage = () => {
     const handleDelete = async (thesisId) => {
         if (window.confirm('Are you sure you want to delete this thesis? This action cannot be undone.')) {
             try {
-                await axios.delete(`http://localhost:5000/api/theses/${thesisId}`, {
+                // UPDATED: Use the live Render backend URL
+                await axios.delete(`YOUR_RENDER_BACKEND_URL/api/theses/${thesisId}`, {
                     headers: {
                         'x-auth-token': user.token,
                     },
                 });
                 setSnackbar({ show: true, message: 'Thesis deleted successfully!', type: 'success' });
-                fetchTheses(); // Re-fetch theses to update the list
+                fetchTheses();
             } catch (err) {
                 console.error('Failed to delete thesis:', err.response ? err.response.data : err.message);
                 setSnackbar({ show: true, message: 'Failed to delete thesis. Please try again.', type: 'error' });
@@ -159,7 +158,8 @@ const DashboardPage = () => {
     };
 
     const handleDownload = (filePath, fileName) => {
-        const fileUrl = `http://localhost:5000/${filePath.replace(/\\/g, '/')}`;
+        // UPDATED: Use the live Render backend URL
+        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
@@ -198,10 +198,9 @@ const DashboardPage = () => {
                 <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                     {theses.map((thesis) => (
                         <div className="col" key={thesis._id}>
-                            {/* Use ThesisCard component here */}
                             <ThesisCard
                                 thesis={thesis}
-                                isOwnerOrAdmin={true} // For dashboard, user is always the owner
+                                isOwnerOrAdmin={true}
                                 checkingPlagiarismId={checkingPlagiarismId}
                                 checkingGrammarId={checkingGrammarId}
                                 onPlagiarismCheck={handlePlagiarismCheck}
@@ -209,7 +208,6 @@ const DashboardPage = () => {
                                 onDownload={handleDownload}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
-                            // No onApprove/onReject for DashboardPage
                             />
                         </div>
                     ))}

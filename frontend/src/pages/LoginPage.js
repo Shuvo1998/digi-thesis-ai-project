@@ -5,7 +5,6 @@ import { faEnvelope, faLock, faSignInAlt } from '@fortawesome/free-solid-svg-ico
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
-import { jwtDecode } from 'jwt-decode'; // ADDED: Import jwtDecode
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
@@ -14,7 +13,7 @@ const LoginPage = () => {
     });
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { user, login } = useContext(UserContext);
+    const { login } = useContext(UserContext);
 
     const [snackbar, setSnackbar] = useState({
         show: false,
@@ -40,27 +39,16 @@ const LoginPage = () => {
         setSnackbar({ ...snackbar, show: false });
 
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/login', {
+            // UPDATED: Use the live Render backend URL
+            // IMPORTANT: Replace 'YOUR_RENDER_BACKEND_URL' with your actual deployed backend URL from Render.com
+            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/auth/login', {
                 email,
                 password
             });
 
-            const { token } = res.data; // Backend only sends 'token'
+            const { token } = res.data;
 
-            // ADDED: Decode the token to get user details including role
-            const decodedToken = jwtDecode(token);
-            const userDataFromToken = decodedToken.user; // This should contain id and role from JWT payload
-
-            // Combine token with decoded user data
-            const userToLogin = {
-                token,
-                id: userDataFromToken.id,
-                username: userDataFromToken.username || email, // Use username from token, or fallback to email
-                email: email, // Email comes from form input
-                role: userDataFromToken.role || 'user', // Get role from token, fallback to 'user'
-            };
-
-            login(userToLogin); // Pass the combined user object to context login function
+            await login({ token });
 
             setSnackbar({
                 show: true,
@@ -68,13 +56,19 @@ const LoginPage = () => {
                 type: 'success',
             });
 
+            const checkUserRes = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth', {
+                headers: { 'x-auth-token': token }
+            });
+            const latestUserData = checkUserRes.data;
+
             setTimeout(() => {
-                if (userToLogin.role === 'admin' || userToLogin.role === 'supervisor') {
+                if (latestUserData.role === 'admin' || latestUserData.role === 'supervisor') {
                     navigate('/admin-dashboard');
                 } else {
                     navigate('/dashboard');
                 }
             }, snackbar.duration || 3000);
+
 
         } catch (err) {
             console.error('Login failed:', err.response ? err.response.data : err.message);

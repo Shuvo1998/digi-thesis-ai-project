@@ -7,19 +7,18 @@ import {
     faEdit, faTrashAlt, faDownload, faSearch, faLanguage, faCheckCircle, faTimesCircle
 } from '@fortawesome/free-solid-svg-icons';
 
-// ThesisCard component receives props for data and actions
 const ThesisCard = ({
     thesis,
-    isOwnerOrAdmin = false, // To show/hide action buttons for owner/admin
-    checkingPlagiarismId = null, // For plagiarism button loading state
-    checkingGrammarId = null,    // For grammar button loading state
-    onPlagiarismCheck, // Handler for plagiarism button
-    onGrammarCheck,    // Handler for grammar button
-    onDownload,        // Handler for download button
-    onEdit,            // Handler for edit button
-    onDelete,          // Handler for delete button
-    onApprove,         // Handler for approve button (Admin Dashboard)
-    onReject           // Handler for reject button (Admin Dashboard)
+    isOwnerOrAdmin = false,
+    checkingPlagiarismId = null,
+    checkingGrammarId = null,
+    onPlagiarismCheck,
+    onGrammarCheck,
+    onDownload,
+    onEdit,
+    onDelete,
+    onApprove,
+    onReject
 }) => {
 
     const statusClasses = {
@@ -28,17 +27,28 @@ const ThesisCard = ({
         'pending': 'bg-warning text-dark'
     };
 
+    // Helper function for download to use the correct base URL
+    const handleDownloadInternal = (filePath, fileName) => {
+        // UPDATED: Use the live Render backend URL
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
+        window.open(fileUrl, '_blank');
+        // If an external onDownload handler is provided, call it too
+        if (onDownload) {
+            onDownload(filePath, fileName);
+        }
+    };
+
+
     return (
         <div className="card h-100 shadow-sm bg-white text-dark thesis-card-custom">
             <div className="card-body d-flex flex-column">
-                {/* Link the title to the ViewThesisPage */}
                 <Link to={`/thesis/${thesis._id}`} className="text-decoration-none">
                     <h5 className="card-title text-primary mb-2 thesis-title-link">{thesis.title}</h5>
                 </Link>
                 <h6 className="card-subtitle mb-2 text-muted">
                     <FontAwesomeIcon icon={faUserGraduate} className="me-1" />
                     Uploaded by: {thesis.user ? thesis.user.username : 'N/A'}
-                    {thesis.user && thesis.user.email && ` (${thesis.user.email})`} {/* Show email if available */}
+                    {thesis.user && thesis.user.email && ` (${thesis.user.email})`}
                 </h6>
                 <h6 className="card-subtitle mb-2 text-muted">
                     <FontAwesomeIcon icon={faCalendarAlt} className="me-1" />
@@ -54,7 +64,6 @@ const ThesisCard = ({
                     </p>
                 )}
 
-                {/* Plagiarism Result Display */}
                 {thesis.plagiarismResult && (
                     <div className="plagiarism-result mt-3 mb-2 p-2 border rounded-3 bg-light-subtle text-start overflow-auto" style={{ maxHeight: '100px', fontSize: '0.9em' }}>
                         <strong className="text-info">Plagiarism Check Result:</strong>
@@ -62,7 +71,6 @@ const ThesisCard = ({
                     </div>
                 )}
 
-                {/* Grammar Result Display */}
                 {thesis.grammarResult && (
                     <div className="grammar-result mt-3 mb-2 p-2 border rounded-3 bg-light-subtle text-start overflow-auto" style={{ maxHeight: '100px', fontSize: '0.9em' }}>
                         <strong className="text-info">Grammar Check Result:</strong>
@@ -75,9 +83,7 @@ const ThesisCard = ({
                         Status: {thesis.status.charAt(0).toUpperCase() + thesis.status.slice(1)}
                     </span>
                     <div className="d-flex flex-wrap gap-2 mt-2 mt-md-0">
-                        {/* Action Buttons - conditional based on props */}
 
-                        {/* Plagiarism Check Button (only for owner/admin/supervisor) */}
                         {isOwnerOrAdmin && (onPlagiarismCheck && (
                             <button
                                 className="btn btn-info btn-sm"
@@ -97,7 +103,6 @@ const ThesisCard = ({
                             </button>
                         ))}
 
-                        {/* Grammar Check Button (only for owner/admin/supervisor) */}
                         {isOwnerOrAdmin && (onGrammarCheck && (
                             <button
                                 className="btn btn-warning text-dark btn-sm"
@@ -117,18 +122,17 @@ const ThesisCard = ({
                             </button>
                         ))}
 
-                        {/* Download Button (available for all views that pass the handler) */}
+                        {/* Use the internal handler for download */}
                         {onDownload && (
                             <button
                                 className="btn btn-outline-secondary btn-sm"
                                 title="Download Thesis"
-                                onClick={() => onDownload(thesis.filePath, thesis.fileName)}
+                                onClick={() => handleDownloadInternal(thesis.filePath, thesis.fileName)}
                             >
                                 <FontAwesomeIcon icon={faDownload} />
                             </button>
                         )}
 
-                        {/* Edit Button (only for owner) */}
                         {isOwnerOrAdmin && (onEdit && (
                             <button
                                 className="btn btn-outline-primary btn-sm"
@@ -139,7 +143,6 @@ const ThesisCard = ({
                             </button>
                         ))}
 
-                        {/* Delete Button (only for owner) */}
                         {isOwnerOrAdmin && (onDelete && (
                             <button
                                 className="btn btn-outline-danger btn-sm"
@@ -150,7 +153,6 @@ const ThesisCard = ({
                             </button>
                         ))}
 
-                        {/* Approve Button (only for Admin Dashboard) */}
                         {onApprove && (
                             <button
                                 className="btn btn-success btn-sm"
@@ -161,7 +163,6 @@ const ThesisCard = ({
                             </button>
                         )}
 
-                        {/* Reject Button (only for Admin Dashboard) */}
                         {onReject && (
                             <button
                                 className="btn btn-danger btn-sm"

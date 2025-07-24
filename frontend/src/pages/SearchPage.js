@@ -1,6 +1,6 @@
 // frontend/src/pages/SearchPage.js
 import React, { useState, useEffect, useContext } from 'react';
-import { useLocation } from 'react-router-dom'; // To get query parameters
+import { useLocation } from 'react-router-dom';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
@@ -9,8 +9,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSpinner } from '@fortawesome/free-solid-svg-icons';
 
 const SearchPage = () => {
-    const location = useLocation(); // Hook to access the URL's location object
-    const { user, loading: userLoading } = useContext(UserContext); // Get user context for potential future private searches
+    const location = useLocation();
+    const { user, loading: userLoading } = useContext(UserContext);
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -20,14 +20,12 @@ const SearchPage = () => {
         type: 'info',
     });
 
-    // Extract the search query from the URL (e.g., ?q=your+query)
     const searchQuery = new URLSearchParams(location.search).get('q') || '';
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
     };
 
-    // Function to fetch search results
     const fetchSearchResults = async () => {
         if (!searchQuery) {
             setSearchResults([]);
@@ -39,8 +37,8 @@ const SearchPage = () => {
         setLoading(true);
         setError('');
         try {
-            // Call the backend search API
-            const res = await axios.get(`http://localhost:5000/api/theses/search?q=${encodeURIComponent(searchQuery)}`);
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/search?q=${encodeURIComponent(searchQuery)}`);
             setSearchResults(res.data);
             setLoading(false);
         } catch (err) {
@@ -56,11 +54,11 @@ const SearchPage = () => {
 
     useEffect(() => {
         fetchSearchResults();
-    }, [searchQuery]); // Re-fetch results whenever the search query in the URL changes
+    }, [searchQuery]);
 
-    // Handler for downloading public theses (passed to ThesisCard)
     const handleDownloadPublicThesis = (filePath, fileName) => {
-        const fileUrl = `http://localhost:5000/${filePath.replace(/\\/g, '/')}`;
+        // UPDATED: Use the live Render backend URL
+        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
@@ -95,8 +93,7 @@ const SearchPage = () => {
                         <div className="col" key={thesis._id}>
                             <ThesisCard
                                 thesis={thesis}
-                                onDownload={handleDownloadPublicThesis} // Only download is available for public search results
-                            // No other actions are passed, so only download will be visible
+                                onDownload={handleDownloadPublicThesis}
                             />
                         </div>
                     ))}

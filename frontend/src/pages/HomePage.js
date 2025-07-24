@@ -3,13 +3,13 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate // Removed unused faBook, faPencilAlt, faTags
+    faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
-import ThesisCard from '../components/Thesis/ThesisCard'; // ADDED: Import ThesisCard
+import ThesisCard from '../components/Thesis/ThesisCard';
 
 const HomePage = () => {
     const fileInputRef = useRef(null);
@@ -45,9 +45,9 @@ const HomePage = () => {
         }
     };
 
-    // This handler is passed to ThesisCard for public downloads
     const handleDownloadPublicThesis = (filePath, fileName) => {
-        const fileUrl = `http://localhost:5000/${filePath.replace(/\\/g, '/')}`;
+        // UPDATED: Use the live Render backend URL
+        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
@@ -56,7 +56,8 @@ const HomePage = () => {
         try {
             setLoadingPublicTheses(true);
             setPublicThesesError('');
-            const res = await axios.get('http://localhost:5000/api/theses/public');
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/theses/public');
             setPublicTheses(res.data);
             setLoadingPublicTheses(false);
         } catch (err) {
@@ -135,9 +136,7 @@ const HomePage = () => {
                 onClose={handleCloseSnackbar}
             />
 
-            {/* Hero Section (existing) */}
             <section className="hero-section mb-5">
-                {/* Animated Background Elements */}
                 <motion.div
                     className="animated-blob"
                     variants={floatingElementVariants}
@@ -171,7 +170,6 @@ const HomePage = () => {
                         animationDelay: '2s'
                     }}
                 ></motion.div>
-                {/* Add more blobs for visual interest */}
                 <motion.div
                     className="animated-blob"
                     variants={floatingElementVariants}
@@ -208,7 +206,6 @@ const HomePage = () => {
                 ></motion.div>
 
 
-                {/* Content with z-index to stay above background elements */}
                 <div style={{ position: 'relative', zIndex: 1 }}>
 
                     <motion.h1
@@ -249,7 +246,6 @@ const HomePage = () => {
                 </div>
             </section>
 
-            {/* Public Submissions Section (existing) */}
             <section className="public-submissions-section py-5 bg-light rounded-3 shadow-lg mt-5">
                 <h2 className="mb-4 text-dark">
                     <FontAwesomeIcon icon={faBookOpen} className="me-3" /> Latest Approved Theses
@@ -269,11 +265,9 @@ const HomePage = () => {
                     <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 px-3">
                         {publicTheses.map((thesis) => (
                             <div className="col" key={thesis._id}>
-                                {/* Use ThesisCard component here */}
                                 <ThesisCard
                                     thesis={thesis}
-                                    onDownload={handleDownloadPublicThesis} // Pass the download handler
-                                // No other actions are passed, so only download will be visible
+                                    onDownload={handleDownloadPublicThesis}
                                 />
                             </div>
                         ))}
@@ -281,7 +275,6 @@ const HomePage = () => {
                 )}
             </section>
 
-            {/* Original Features Section (existing) */}
             <section className="features-section py-5 bg-light mt-5">
                 <h2 className="mb-4">Key Features</h2>
                 <div className="row justify-content-center">

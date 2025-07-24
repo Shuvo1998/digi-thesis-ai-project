@@ -11,7 +11,7 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 
 const ViewThesisPage = () => {
-    const { id } = useParams(); // Get thesis ID from URL
+    const { id } = useParams();
     const navigate = useNavigate();
     const { user, loading: userLoading } = useContext(UserContext);
 
@@ -30,28 +30,25 @@ const ViewThesisPage = () => {
         setSnackbar({ ...snackbar, show: false });
     };
 
-    // Function to fetch a single thesis
     const fetchThesis = async () => {
         setLoading(true);
         setError('');
         try {
             let res;
-            // Determine which endpoint to call based on user's role and thesis status
-            // If user is logged in AND is owner OR admin/supervisor, try private endpoint first
             if (user && !userLoading) {
-                // Attempt to fetch via private endpoint (for owner/admin/supervisor)
                 try {
-                    res = await axios.get(`http://localhost:5000/api/theses/${id}`, {
+                    // UPDATED: Use the live Render backend URL
+                    res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/${id}`, {
                         headers: { 'x-auth-token': user.token }
                     });
                 } catch (privateErr) {
-                    // If private endpoint fails (e.g., not owner), try public if approved
                     console.warn("Private thesis fetch failed, attempting public:", privateErr.message);
-                    res = await axios.get(`http://localhost:5000/api/theses/public/${id}`);
+                    // UPDATED: Use the live Render backend URL
+                    res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/public/${id}`);
                 }
             } else {
-                // If not logged in, only try public endpoint
-                res = await axios.get(`http://localhost:5000/api/theses/public/${id}`);
+                // UPDATED: Use the live Render backend URL
+                res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/public/${id}`);
             }
 
             setThesis(res.data);
@@ -68,13 +65,11 @@ const ViewThesisPage = () => {
     };
 
     useEffect(() => {
-        // Only fetch if user loading is complete
         if (!userLoading) {
             fetchThesis();
         }
-    }, [id, user, userLoading]); // Re-fetch if ID or user/loading changes
+    }, [id, user, userLoading]);
 
-    // --- Handle Plagiarism Check ---
     const handlePlagiarismCheck = async (thesisId) => {
         setCheckingPlagiarismId(thesisId);
         setSnackbar({ show: false, message: '', type: 'info' });
@@ -86,13 +81,14 @@ const ViewThesisPage = () => {
         }
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/theses/check-plagiarism/${thesisId}`, {}, {
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-plagiarism/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchThesis(); // Re-fetch thesis to update the plagiarismResult
+            fetchThesis();
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
@@ -104,7 +100,6 @@ const ViewThesisPage = () => {
         }
     };
 
-    // --- Handle Grammar Check ---
     const handleGrammarCheck = async (thesisId) => {
         setCheckingGrammarId(thesisId);
         setSnackbar({ show: false, message: '', type: 'info' });
@@ -116,13 +111,14 @@ const ViewThesisPage = () => {
         }
 
         try {
-            const res = await axios.post(`http://localhost:5000/api/theses/check-grammar/${thesisId}`, {}, {
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-grammar/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
             setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchThesis(); // Re-fetch thesis to update the grammarResult
+            fetchThesis();
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
@@ -135,7 +131,8 @@ const ViewThesisPage = () => {
     };
 
     const handleDownload = (filePath, fileName) => {
-        const fileUrl = `http://localhost:5000/${filePath.replace(/\\/g, '/')}`;
+        // UPDATED: Use the live Render backend URL
+        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
@@ -169,7 +166,6 @@ const ViewThesisPage = () => {
         );
     }
 
-    // Determine if the logged-in user is the owner or an admin/supervisor
     const isOwnerOrAdmin = user && (thesis.user._id === user.id || user.role === 'admin' || user.role === 'supervisor');
 
     return (
@@ -203,7 +199,6 @@ const ViewThesisPage = () => {
                         </>
                     )}
 
-                    {/* Plagiarism Result Display */}
                     {thesis.plagiarismResult && (
                         <>
                             <h5 className="text-info mt-4 mb-2">Plagiarism Check Result:</h5>
@@ -213,7 +208,6 @@ const ViewThesisPage = () => {
                         </>
                     )}
 
-                    {/* Grammar Result Display */}
                     {thesis.grammarResult && (
                         <>
                             <h5 className="text-info mt-4 mb-2">Grammar Check Result:</h5>
@@ -223,7 +217,6 @@ const ViewThesisPage = () => {
                         </>
                     )}
 
-                    {/* Action Buttons (only visible to owner or admin/supervisor) */}
                     {isOwnerOrAdmin && (
                         <div className="d-flex flex-wrap justify-content-center gap-3 mt-4 pt-3 border-top">
                             <button

@@ -4,7 +4,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faUser, faEnvelope, faLock, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar'; // Ensure Snackbar is imported
+import Snackbar from '../components/Common/Snackbar';
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
@@ -13,18 +13,15 @@ const RegisterPage = () => {
         password: '',
         password2: ''
     });
-    // Removed 'error' state for alert-danger div, Snackbar will handle all errors
     const navigate = useNavigate();
     const { login } = useContext(UserContext);
 
-    // State for Snackbar notifications
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
         type: 'info',
     });
 
-    // Handler to close Snackbar
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
     };
@@ -33,13 +30,12 @@ const RegisterPage = () => {
 
     const onChange = e => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        // Clear snackbar on input change
         if (snackbar.show) setSnackbar({ ...snackbar, show: false });
     };
 
     const onSubmit = async (e) => {
         e.preventDefault();
-        setSnackbar({ ...snackbar, show: false }); // Clear previous snackbar
+        setSnackbar({ ...snackbar, show: false });
 
         if (password !== password2) {
             setSnackbar({
@@ -51,23 +47,23 @@ const RegisterPage = () => {
         }
 
         try {
-            const res = await axios.post('http://localhost:5000/api/auth/register', {
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post('YOUR_RENDER_BACKEND_URL/api/auth/register', {
                 username,
                 email,
                 password
             });
 
             console.log('Registration successful:', res.data);
-            const { token, user: userData } = res.data; // Destructure user data (including role) from response
+            const { token, user: userData } = res.data;
 
-            login({ token, ...userData }); // Pass token and all user data to login context function
+            await login({ token });
 
             setSnackbar({
                 show: true,
                 message: 'Registration successful! You are now logged in.',
                 type: 'success',
             });
-            // Delay navigation slightly to allow snackbar to be seen
             setTimeout(() => {
                 navigate('/dashboard');
             }, snackbar.duration || 3000);
@@ -86,7 +82,6 @@ const RegisterPage = () => {
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
-            {/* Snackbar Component */}
             <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}
@@ -98,9 +93,7 @@ const RegisterPage = () => {
                 <h2 className="text-center mb-4 text-dark">
                     <FontAwesomeIcon icon={faUserPlus} className="me-2" /> Register
                 </h2>
-                {/* Removed direct error display div, Snackbar handles errors */}
                 <form onSubmit={onSubmit}>
-                    {/* Username Field */}
                     <div className="mb-3">
                         <label htmlFor="username" className="form-label text-primary fw-bold text-start d-flex align-items-center">
                             <FontAwesomeIcon icon={faUser} className="me-2" /> Username
@@ -119,7 +112,6 @@ const RegisterPage = () => {
                             />
                         </div>
                     </div>
-                    {/* Email Field */}
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label text-primary fw-bold text-start d-flex align-items-center">
                             <FontAwesomeIcon icon={faEnvelope} className="me-2" /> University Email
@@ -138,7 +130,6 @@ const RegisterPage = () => {
                             />
                         </div>
                     </div>
-                    {/* Password Field */}
                     <div className="mb-3">
                         <label htmlFor="password" className="form-label text-primary fw-bold text-start d-flex align-items-center">
                             <FontAwesomeIcon icon={faLock} className="me-2" /> Password
@@ -157,7 +148,6 @@ const RegisterPage = () => {
                             />
                         </div>
                     </div>
-                    {/* Confirm Password Field */}
                     <div className="mb-3">
                         <label htmlFor="password2" className="form-label text-primary fw-bold text-start d-flex align-items-center">
                             <FontAwesomeIcon icon={faLock} className="me-2" /> Confirm Password

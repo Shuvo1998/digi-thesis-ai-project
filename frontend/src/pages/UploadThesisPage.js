@@ -6,7 +6,7 @@ import { faFileUpload, faBook, faPencilAlt, faTags, faSpinner } from '@fortaweso
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar'; // Ensure Snackbar is imported
+import Snackbar from '../components/Common/Snackbar';
 
 const UploadThesisPage = () => {
     const [selectedFile, setSelectedFile] = useState(null);
@@ -15,31 +15,26 @@ const UploadThesisPage = () => {
         abstract: '',
         keywords: ''
     });
-    const [isUploading, setIsUploading] = useState(false); // State for upload in progress
+    const [isUploading, setIsUploading] = useState(false);
 
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
     const { user, loading: userLoading } = useContext(UserContext);
 
-    // State for Snackbar notifications
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
         type: 'info',
     });
 
-    // Destructure thesisData for easier access
     const { title, abstract, keywords } = thesisData;
 
-    // Handler to close Snackbar
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
     };
 
-    // Handler for text input changes
     const onThesisDataChange = e => {
         setThesisData({ ...thesisData, [e.target.name]: e.target.value });
-        // Clear all feedback messages when user starts typing
         setSnackbar({ ...snackbar, show: false });
     };
 
@@ -47,14 +42,13 @@ const UploadThesisPage = () => {
         const file = event.target.files[0];
         setSelectedFile(file);
         console.log('Selected file:', file ? file.name : 'No file');
-        // Clear all feedback messages when a new file is selected
         setSnackbar({ ...snackbar, show: false });
     };
 
     const handleUploadSubmit = async (e) => {
-        e.preventDefault(); // Prevent default form submission
+        e.preventDefault();
 
-        setSnackbar({ ...snackbar, show: false }); // Clear previous snackbar
+        setSnackbar({ ...snackbar, show: false });
 
         if (!user || !user.token) {
             setSnackbar({
@@ -62,7 +56,7 @@ const UploadThesisPage = () => {
                 message: 'You must be logged in to upload a thesis. Redirecting to login.',
                 type: 'error',
             });
-            setTimeout(() => navigate('/login'), snackbar.duration || 3000);
+            setTimeout(() => navigate('/login'), 3000);
             return;
         }
 
@@ -84,7 +78,7 @@ const UploadThesisPage = () => {
             return;
         }
 
-        setIsUploading(true); // Set uploading state to true
+        setIsUploading(true);
 
         const formDataToSend = new FormData();
         formDataToSend.append('thesisFile', selectedFile);
@@ -93,7 +87,8 @@ const UploadThesisPage = () => {
         formDataToSend.append('keywords', keywords.trim());
 
         try {
-            const res = await axios.post('http://localhost:5000/api/theses/upload', formDataToSend, {
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post('YOUR_RENDER_BACKEND_URL/api/theses/upload', formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'x-auth-token': user.token
@@ -106,11 +101,9 @@ const UploadThesisPage = () => {
                 message: 'Thesis uploaded successfully!',
                 type: 'success',
             });
-            // Clear form fields after successful upload
             setSelectedFile(null);
             setThesisData({ title: '', abstract: '', keywords: '' });
 
-            // Redirect to dashboard after successful upload and snackbar display
             setTimeout(() => {
                 navigate('/dashboard');
             }, snackbar.duration || 3000);
@@ -126,12 +119,10 @@ const UploadThesisPage = () => {
                 type: 'error',
             });
         } finally {
-            setIsUploading(false); // Reset uploading state
+            setIsUploading(false);
         }
     };
 
-
-    // Framer Motion variants (existing)
     const containerVariants = {
         hidden: { opacity: 0, y: 50 },
         visible: {
@@ -172,7 +163,6 @@ const UploadThesisPage = () => {
 
     return (
         <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: 'calc(100vh - 120px)' }}>
-            {/* Snackbar Component */}
             <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}
@@ -192,7 +182,6 @@ const UploadThesisPage = () => {
                 </h2>
 
                 <form onSubmit={handleUploadSubmit}>
-                    {/* Thesis Title Input */}
                     <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
                         <label htmlFor="title" className="form-label text-dark d-flex align-items-center">
                             <FontAwesomeIcon icon={faBook} className="me-2" /> Thesis Title
@@ -210,7 +199,6 @@ const UploadThesisPage = () => {
                         />
                     </motion.div>
 
-                    {/* Thesis Abstract Input */}
                     <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
                         <label htmlFor="abstract" className="form-label text-dark d-flex align-items-center">
                             <FontAwesomeIcon icon={faPencilAlt} className="me-2" /> Abstract
@@ -228,7 +216,6 @@ const UploadThesisPage = () => {
                         ></textarea>
                     </motion.div>
 
-                    {/* Keywords Input */}
                     <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
                         <label htmlFor="keywords" className="form-label text-dark d-flex align-items-center">
                             <FontAwesomeIcon icon={faTags} className="me-2" /> Keywords (comma-separated)
@@ -245,7 +232,6 @@ const UploadThesisPage = () => {
                         />
                     </motion.div>
 
-                    {/* Hidden File Input */}
                     <input
                         type="file"
                         ref={fileInputRef}
@@ -255,7 +241,6 @@ const UploadThesisPage = () => {
                         disabled={isUploading}
                     />
 
-                    {/* File Selection Area */}
                     <motion.div
                         className="file-upload-area p-4 mb-4 border rounded-3 d-flex flex-column align-items-center justify-content-center"
                         onClick={() => !isUploading && fileInputRef.current.click()}
@@ -274,7 +259,6 @@ const UploadThesisPage = () => {
                         {!selectedFile && <small className="text-muted">Only PDF files up to 50MB are allowed.</small>}
                     </motion.div>
 
-                    {/* Submit Button */}
                     <motion.button
                         type="submit"
                         className="btn btn-primary btn-lg w-100"
