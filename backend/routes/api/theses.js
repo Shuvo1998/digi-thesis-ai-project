@@ -6,6 +6,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const pdf = require('pdf-parse');
+// const config = require('config'); // Still commented out for simulated AI
 
 const auth = require('../../middleware/auth');
 const authorizeRole = require('../../middleware/role');
@@ -125,6 +126,40 @@ router.get(
     }
 );
 
+// @route   GET api/theses/search
+// @desc    Search for approved theses by title, abstract, or keywords
+// @access  Public
+router.get('/search', async (req, res) => {
+    try {
+        const { q } = req.query; // Get the search query from URL parameters (e.g., ?q=machine learning)
+
+        if (!q) {
+            return res.status(400).json({ msg: 'Search query is required.' });
+        }
+
+        // Create a case-insensitive regex for searching
+        const searchRegex = new RegExp(q, 'i');
+
+        const searchResults = await Thesis.find({
+            status: 'approved', // Only search among approved theses
+            $or: [ // Search in title, abstract, or keywords
+                { title: { $regex: searchRegex } },
+                { abstract: { $regex: searchRegex } },
+                { keywords: { $regex: searchRegex } }
+            ]
+        })
+            .populate('user', ['username', 'email']) // Populate uploader details
+            .sort({ uploadDate: -1 }); // Sort by most recent
+
+        res.json(searchResults);
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
+
+
 // @route   GET api/theses
 // @desc    Get all theses for the authenticated user
 // @access  Private
@@ -229,12 +264,12 @@ router.post(
     }
 );
 
-// @route   POST api/theses/check-grammar/:id
+// @route   POST api/theses/check-grammar/:id (existing)
 // @desc    Trigger grammar correction for a thesis using a simulated AI
 // @access  Private (Owner or Admin/Supervisor)
 router.post(
     '/check-grammar/:id',
-    auth, // Ensure user is authenticated
+    auth,
     async (req, res) => {
         try {
             const thesis = await Thesis.findById(req.params.id);
@@ -243,23 +278,17 @@ router.post(
                 return res.status(404).json({ msg: 'Thesis not found' });
             }
 
-            // Authorization: Only the owner or an admin/supervisor can trigger the check
             if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
                 return res.status(401).json({ msg: 'User not authorized to perform this action.' });
             }
 
-            // Construct the absolute path to the PDF file
             const pdfFilePath = path.join(__dirname, '..', '..', thesis.filePath);
 
-            // Check if the file exists
             if (!fs.existsSync(pdfFilePath)) {
                 return res.status(404).json({ msg: 'Thesis PDF file not found on server.' });
             }
 
-            // Read PDF file as buffer
             const dataBuffer = fs.readFileSync(pdfFilePath);
-
-            // Parse PDF to extract text
             const data = await pdf(dataBuffer);
             const thesisText = data.text;
 
@@ -269,7 +298,7 @@ router.post(
 
             // --- SIMULATED Grammar Correction Logic ---
             let grammarResultText;
-            const originalTextSnippet = thesisText.substring(0, Math.min(thesisText.length, 200)).trim(); // Take a snippet
+            const originalTextSnippet = thesisText.substring(0, Math.min(thesisText.length, 200)).trim();
 
             if (originalTextSnippet.toLowerCase().includes('i has')) {
                 grammarResultText = `Original: "${originalTextSnippet}"\nCorrected: "${originalTextSnippet.replace(/i has/gi, 'I have')}"\n\nSuggestion: Corrected "i has" to "I have".`;
@@ -281,10 +310,8 @@ router.post(
                 grammarResultText = `Original Text Snippet:\n"${originalTextSnippet}"\n\nNo significant grammar errors detected in this snippet.`;
             }
 
-            // Simulate a delay for the "AI" processing
-            await new Promise(resolve => setTimeout(resolve, 2500)); // 2.5-second delay
+            await new Promise(resolve => setTimeout(resolve, 2500));
 
-            // Update the thesis document with the grammar result
             thesis.grammarResult = grammarResultText;
             await thesis.save();
 

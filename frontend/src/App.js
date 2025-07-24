@@ -12,7 +12,8 @@ import PrivateRoute from './components/Routing/PrivateRoute';
 import UploadThesisPage from './pages/UploadThesisPage';
 import DashboardPage from './pages/DashboardPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
-import ViewThesisPage from './pages/ViewThesisPage'; // <-- IMPORT NEW VIEW THESIS PAGE
+import ViewThesisPage from './pages/ViewThesisPage';
+import SearchPage from './pages/SearchPage'; // <-- IMPORT NEW SEARCH PAGE
 
 // Import global styles and Bootstrap CSS
 import './styles/global.css';
@@ -31,7 +32,8 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
-            <Route path="/thesis/:id" element={<ViewThesisPage />} /> {/* <-- ADDED: Public route for viewing a single thesis */}
+            <Route path="/thesis/:id" element={<ViewThesisPage />} />
+            <Route path="/search" element={<SearchPage />} /> {/* <-- ADDED: Public route for search results */}
 
             {/* Protected Routes (Wrap with PrivateRoute) */}
             <Route

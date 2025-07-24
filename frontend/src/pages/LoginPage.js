@@ -4,18 +4,18 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faLock, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar'; // Ensure Snackbar is imported
+import Snackbar from '../components/Common/Snackbar'; // <-- IMPORT SNACKBAR
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
-    // Removed 'error' state for alert-danger div, Snackbar will handle all errors
+    const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { login } = useContext(UserContext);
+    const { user, login } = useContext(UserContext); // Get the login function from context, and current user state
 
-    // State for Snackbar notifications
+    // ADDED: State for Snackbar
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
@@ -31,12 +31,13 @@ const LoginPage = () => {
 
     const onChange = e => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        // Clear snackbar on input change
-        if (snackbar.show) setSnackbar({ ...snackbar, show: false });
+        if (error) setError('');
+        if (snackbar.show) setSnackbar({ ...snackbar, show: false }); // Clear snackbar on input change
     };
 
     const onSubmit = async e => {
         e.preventDefault();
+        setError(''); // Clear previous errors
         setSnackbar({ ...snackbar, show: false }); // Clear previous snackbar
 
         try {
@@ -48,20 +49,31 @@ const LoginPage = () => {
             console.log('Login successful:', res.data);
             const { token, user: userData } = res.data; // Destructure user data (including role) from response
 
-            login({ token, ...userData }); // Pass token and all user data to login context function
+            // Ensure userData.role defaults to 'user' if not provided by backend
+            const userRole = userData && userData.role ? userData.role : 'user'; // MODIFIED LINE
 
+            login({ token, ...userData, role: userRole }); // Pass token and all user data to login context function, with guaranteed role
+
+            // Replaced alert with Snackbar for success
             setSnackbar({
                 show: true,
                 message: 'Login successful! Welcome back.',
                 type: 'success',
             });
+
             // Delay navigation slightly to allow snackbar to be seen
             setTimeout(() => {
-                navigate('/dashboard');
-            }, snackbar.duration || 3000);
+                // Check user role for redirection, safely accessing userRole
+                if (userRole === 'admin' || userRole === 'supervisor') { // MODIFIED LINE
+                    navigate('/admin-dashboard'); // Redirect admin/supervisor to admin dashboard
+                } else {
+                    navigate('/dashboard'); // Redirect regular users to their dashboard
+                }
+            }, snackbar.duration || 3000); // Use snackbar's default duration or specify
 
         } catch (err) {
             console.error('Login failed:', err.response ? err.response.data : err.message);
+            // Replaced alert with Snackbar for error
             setSnackbar({
                 show: true,
                 message: err.response && err.response.data && err.response.data.errors
@@ -69,12 +81,16 @@ const LoginPage = () => {
                     : 'Login failed. Please check your credentials.',
                 type: 'error',
             });
+            // Also set the error state for the alert-danger display below the heading
+            setError(err.response && err.response.data && err.response.data.errors
+                ? err.response.data.errors[0].msg
+                : 'Login failed. Please check your credentials.');
         }
     };
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
-            {/* Snackbar Component */}
+            {/* ADDED: Snackbar Component */}
             <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}
@@ -84,7 +100,7 @@ const LoginPage = () => {
 
             <div className="card p-4 shadow-lg" style={{ maxWidth: '400px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
                 <h2 className="text-center mb-4 text-dark">Welcome Back!</h2>
-                {/* Removed direct error display div, Snackbar handles errors */}
+                {error && <div className="alert alert-danger">{error}</div>}
                 <form onSubmit={onSubmit}>
                     <div className="mb-3">
                         <label htmlFor="email" className="form-label text-primary fw-bold text-start d-flex align-items-center">
