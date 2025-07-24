@@ -1,18 +1,16 @@
 // backend/routes/api/users.js
-
 const express = require('express');
-const router = express.Router();
+const router = express.Router(); // THIS LINE IS CRITICAL - MUST BE express.Router()
+const { check, validationResult } = require('express-validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('config');
-const { check, validationResult } = require('express-validator');
-
 const User = require('../../models/User');
 const auth = require('../../middleware/auth'); // Import auth middleware
 const authorizeRole = require('../../middleware/role'); // Import authorizeRole middleware
 
 // @route   POST api/users
-// @desc    Register user (existing route)
+// @desc    Register user
 // @access  Public
 router.post(
     '/',
@@ -36,7 +34,9 @@ router.post(
             let user = await User.findOne({ email });
 
             if (user) {
-                return res.status(400).json({ errors: [{ msg: 'User already exists' }] });
+                return res
+                    .status(400)
+                    .json({ errors: [{ msg: 'User already exists' }] });
             }
 
             user = new User({
@@ -47,6 +47,7 @@ router.post(
             });
 
             const salt = await bcrypt.genSalt(10);
+
             user.password = await bcrypt.hash(password, salt);
 
             await user.save();
@@ -54,10 +55,10 @@ router.post(
             const payload = {
                 user: {
                     id: user.id,
-                    role: user.role, // Include role in JWT payload
-                    username: user.username, // Include username in JWT payload
-                    email: user.email // Include email in JWT payload
-                },
+                    role: user.role,
+                    username: user.username,
+                    email: user.email
+                }
             };
 
             jwt.sign(
@@ -71,7 +72,7 @@ router.post(
             );
         } catch (err) {
             console.error(err.message);
-            res.status(500).send('Server Error');
+            res.status(500).send('Server error');
         }
     }
 );
@@ -112,11 +113,11 @@ router.get(
     }
 );
 
-// @route   PUT api/users/role/:id (existing)
+// @route   PUT api/users/role/:id
 // @desc    Update a user's role (accessible by admin/supervisor)
 // @access  Private (Admin/Supervisor)
 router.put(
-    '/role/:id',
+    '/role/:id', // This is a parameterized route
     auth, // Authenticated users only
     authorizeRole('admin', 'supervisor'), // Only admin or supervisor roles
     [
