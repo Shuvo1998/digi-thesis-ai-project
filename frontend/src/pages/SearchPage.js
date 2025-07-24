@@ -38,7 +38,7 @@ const SearchPage = () => {
         setError('');
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/search?q=${encodeURIComponent(searchQuery)}`);
+            const res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/search?q=${encodeURIComponent(searchQuery)}`);
             setSearchResults(res.data);
             setLoading(false);
         } catch (err) {
@@ -58,7 +58,7 @@ const SearchPage = () => {
 
     const handleDownloadPublicThesis = (filePath, fileName) => {
         // UPDATED: Use the live Render backend URL
-        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };

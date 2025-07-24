@@ -47,7 +47,7 @@ const AdminDashboardPage = () => {
             setLoadingTheses(true);
             setError('');
             // UPDATED: Use the live Render backend URL
-            const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/theses/pending', {
+            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/pending', {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -77,7 +77,7 @@ const AdminDashboardPage = () => {
         }
         try {
             // UPDATED: Use the live Render backend URL
-            await axios.put(`YOUR_RENDER_BACKEND_URL/api/theses/approve/${thesisId}`, {}, {
+            await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/approve/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -98,7 +98,7 @@ const AdminDashboardPage = () => {
         if (window.confirm('Are you sure you want to reject this thesis?')) {
             try {
                 // UPDATED: Use the live Render backend URL
-                await axios.put(`YOUR_RENDER_BACKEND_URL/api/theses/reject/${thesisId}`, {}, {
+                await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/reject/${thesisId}`, {}, {
                     headers: {
                         'x-auth-token': user.token,
                     },
@@ -114,7 +114,7 @@ const AdminDashboardPage = () => {
 
     const handleDownload = (filePath, fileName) => {
         // UPDATED: Use the live Render backend URL
-        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
@@ -131,7 +131,7 @@ const AdminDashboardPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-plagiarism/${thesisId}`, {}, {
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -161,7 +161,7 @@ const AdminDashboardPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-grammar/${thesisId}`, {}, {
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },

@@ -42,7 +42,7 @@ const DashboardPage = () => {
             setLoadingTheses(true);
             setError('');
             // UPDATED: Use the live Render backend URL
-            const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/theses', {
+            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses', {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -86,7 +86,7 @@ const DashboardPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-plagiarism/${thesisId}`, {}, {
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -116,7 +116,7 @@ const DashboardPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-grammar/${thesisId}`, {}, {
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -143,7 +143,7 @@ const DashboardPage = () => {
         if (window.confirm('Are you sure you want to delete this thesis? This action cannot be undone.')) {
             try {
                 // UPDATED: Use the live Render backend URL
-                await axios.delete(`YOUR_RENDER_BACKEND_URL/api/theses/${thesisId}`, {
+                await axios.delete(`https://digi-thesis-ai-project.onrender.com/api/theses/${thesisId}`, {
                     headers: {
                         'x-auth-token': user.token,
                     },
@@ -159,7 +159,7 @@ const DashboardPage = () => {
 
     const handleDownload = (filePath, fileName) => {
         // UPDATED: Use the live Render backend URL
-        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };

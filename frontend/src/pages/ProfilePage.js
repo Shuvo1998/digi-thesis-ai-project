@@ -45,7 +45,7 @@ const ProfilePage = () => {
         try {
             setLoadingProfile(true);
             setError('');
-            const res = await axios.get('http://localhost:5000/api/auth', {
+            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth', {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -127,7 +127,7 @@ const ProfilePage = () => {
         }
 
         try {
-            const res = await axios.put('http://localhost:5000/api/auth/profile', formData, {
+            const res = await axios.put('https://digi-thesis-ai-project.onrender.com/api/auth/profile', formData, {
                 headers: {
                     'x-auth-token': user.token,
                 },

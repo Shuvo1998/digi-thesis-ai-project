@@ -38,17 +38,17 @@ const ViewThesisPage = () => {
             if (user && !userLoading) {
                 try {
                     // UPDATED: Use the live Render backend URL
-                    res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/${id}`, {
+                    res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/${id}`, {
                         headers: { 'x-auth-token': user.token }
                     });
                 } catch (privateErr) {
                     console.warn("Private thesis fetch failed, attempting public:", privateErr.message);
                     // UPDATED: Use the live Render backend URL
-                    res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/public/${id}`);
+                    res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/public/${id}`);
                 }
             } else {
                 // UPDATED: Use the live Render backend URL
-                res = await axios.get(`YOUR_RENDER_BACKEND_URL/api/theses/public/${id}`);
+                res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/public/${id}`);
             }
 
             setThesis(res.data);
@@ -82,7 +82,7 @@ const ViewThesisPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-plagiarism/${thesisId}`, {}, {
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -112,7 +112,7 @@ const ViewThesisPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`YOUR_RENDER_BACKEND_URL/api/theses/check-grammar/${thesisId}`, {}, {
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
                 },
@@ -132,7 +132,7 @@ const ViewThesisPage = () => {
 
     const handleDownload = (filePath, fileName) => {
         // UPDATED: Use the live Render backend URL
-        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };

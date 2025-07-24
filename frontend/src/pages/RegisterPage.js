@@ -48,7 +48,7 @@ const RegisterPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post('YOUR_RENDER_BACKEND_URL/api/auth/register', {
+            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/auth/register', {
                 username,
                 email,
                 password

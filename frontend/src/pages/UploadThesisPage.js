@@ -88,7 +88,7 @@ const UploadThesisPage = () => {
 
         try {
             // UPDATED: Use the live Render backend URL
-            const res = await axios.post('YOUR_RENDER_BACKEND_URL/api/theses/upload', formDataToSend, {
+            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/theses/upload', formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'x-auth-token': user.token

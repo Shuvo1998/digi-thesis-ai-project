@@ -47,7 +47,7 @@ const HomePage = () => {
 
     const handleDownloadPublicThesis = (filePath, fileName) => {
         // UPDATED: Use the live Render backend URL
-        const fileUrl = `YOUR_RENDER_BACKEND_URL/${filePath.replace(/\\/g, '/')}`;
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
     };
@@ -57,7 +57,7 @@ const HomePage = () => {
             setLoadingPublicTheses(true);
             setPublicThesesError('');
             // UPDATED: Use the live Render backend URL
-            const res = await axios.get('YOUR_RENDER_BACKEND_URL/api/theses/public');
+            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/public');
             setPublicTheses(res.data);
             setLoadingPublicTheses(false);
         } catch (err) {
