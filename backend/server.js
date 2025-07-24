@@ -17,11 +17,11 @@ app.use(cors());
 require('./models/User');
 require('./models/Thesis');
 
-// Define Routes - TEMPORARILY COMMENTING OUT TO ISOLATE ERROR
+// Define Routes - UNCOMMENTING THESES ROUTE
 app.use('/api/users', require('./routes/api/users'));
 // app.use('/api/auth', require('./routes/api/auth'));
 // app.use('/api/profile', require('./routes/api/profile'));
-// app.use('/api/theses', require('./routes/api/theses'));
+app.use('/api/theses', require('./routes/api/theses')); // UNCOMMENTED THIS LINE
 
 // Serve static files from the 'uploads' directory
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
