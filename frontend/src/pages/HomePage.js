@@ -1,6 +1,6 @@
 // frontend/src/pages/HomePage.js
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom'; // Ensure Link is imported
+import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate,
@@ -59,7 +59,8 @@ const HomePage = () => {
             setPublicThesesError('');
             // Backend URL is now hardcoded
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/public');
-            setPublicTheses(res.data);
+            // CORRECTED: Access the 'theses' array from the response data
+            setPublicTheses(res.data.theses);
             setLoadingPublicTheses(false);
         } catch (err) {
             console.error('Failed to fetch public theses:', err.response ? err.response.data : err.message);
