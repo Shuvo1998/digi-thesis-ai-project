@@ -139,13 +139,13 @@ p {
     background-color: rgba(255, 255, 255, 0.08);
 }
 
-.navbar-brand .brand-icon {
+.brand-icon {
     color: var(--accent-blue-green);
     /* A futuristic blue-green for the icon */
     transition: transform 0.3s ease-in-out;
 }
 
-.navbar-brand .brand-icon:hover {
+.navbar-brand:hover .brand-icon {
     transform: scale(1.1);
     /* Slight zoom on hover */
 }
@@ -155,15 +155,22 @@ p {
     padding: 0.75rem 1rem;
     border-radius: 0.5rem;
     /* Rounded corners for nav links */
-    transition: background-color 0.3s ease, color 0.3s ease;
+    transition: background-color 0.3s ease, color 0.3s ease, transform 0.2s ease;
+    /* Added transform for animation */
 }
 
-.navbar-nav .nav-link:hover {
-    background-color: rgba(255, 255, 255, 0.1);
+/* Animated Hover for Nav Links */
+.navbar-nav .nav-link:hover:not(.active) {
+    background-color: rgba(255, 255, 255, 0.15);
+    /* More prominent hover background */
     color: var(--text-light) !important;
+    transform: translateY(-2px);
+    /* Slight lift effect */
+    box-shadow: 0 2px 8px rgba(102, 252, 241, 0.2);
+    /* Subtle glow on hover */
 }
 
-/* --- Active Navigation Styles (NEW) --- */
+/* Active Navigation Styles */
 .navbar-nav .nav-link.active {
     color: #fff !important;
     /* Ensure text color is white */
@@ -177,6 +184,10 @@ p {
     /* Smooth transition */
     font-weight: 600;
     /* Make active text a bit bolder */
+    box-shadow: 0 0 8px rgba(102, 252, 241, 0.4);
+    /* Stronger glow for active */
+    transform: translateY(-1px);
+    /* Keep it slightly lifted */
 }
 
 /* Style for active brand link (DigiThesis AI title) */
@@ -356,17 +367,17 @@ p {
 }
 
 .snackbar-success {
-    background-color: var(--snackbar-success);
+    background-color: var(--success-color);
     color: #fff;
 }
 
 .snackbar-error {
-    background-color: var(--snackbar-error);
+    background-color: var(--danger-color);
     color: #fff;
 }
 
 .snackbar-info {
-    background-color: var(--snackbar-info);
+    background-color: var(--info-color);
     color: #fff;
 }
 
@@ -450,7 +461,7 @@ p {
 
 .hero-section .text-success {
     color: var(--accent-blue-green) !important;
-    /* Custom success color for highlight */
+    /* Custom accent color */
 }
 
 /* --- Features section cards --- */

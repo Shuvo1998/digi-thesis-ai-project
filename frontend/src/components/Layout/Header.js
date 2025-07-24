@@ -1,6 +1,6 @@
 // frontend/src/components/Layout/Header.js
 import React, { useContext, useState, useEffect, useRef } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom'; // Import useLocation
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { UserContext } from '../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faBookOpenReader, faUserPlus, faSignInAlt, faSignOutAlt, faUpload, faTachometerAlt, faSearch, faClipboardList, faUserCircle } from '@fortawesome/free-solid-svg-icons';
@@ -15,7 +15,7 @@ const Header = () => {
     const navbarCollapseRef = useRef(null);
     const navbarTogglerRef = useRef(null);
 
-    // Effect to handle clicks outside the collapsed navbar
+    // Effect to handle clicks outside the collapsed navbar (remains as intended)
     useEffect(() => {
         const handleClickOutside = (event) => {
             // Check if the navbar collapse is currently open (has the 'show' class)
@@ -37,7 +37,7 @@ const Header = () => {
             }
         };
 
-        // Add the event listener when the component mounts
+        // Add the event listener for clicks
         document.addEventListener('click', handleClickOutside);
 
         // Clean up the event listener when the component unmounts
@@ -45,6 +45,8 @@ const Header = () => {
             document.removeEventListener('click', handleClickOutside);
         };
     }, []); // Empty dependency array means this effect runs once on mount and cleans up on unmount
+
+    // Removed handleMouseLeaveNavbar function as per user request.
 
     const handleSearchChange = (e) => {
         setSearchQuery(e.target.value);
@@ -69,7 +71,6 @@ const Header = () => {
             return location.pathname === '/'; // Exact match for the home path
         }
         // For other paths, check if the current path starts with the link's path
-        // This handles cases like /admin-dashboard/users also activating /admin-dashboard
         return location.pathname.startsWith(path);
     };
 
@@ -82,6 +83,7 @@ const Header = () => {
                     <span className="fw-bold fs-4">DigiThesis AI</span>
                 </Link>
 
+                {/* Toggle Button Refinement: Added ref to the toggler button */}
                 <button
                     ref={navbarTogglerRef}
                     className="navbar-toggler"
@@ -95,10 +97,12 @@ const Header = () => {
                     <span className="navbar-toggler-icon"></span>
                 </button>
 
+                {/* Navbar Collapse Div Refinement: Added ref, removed onMouseLeave */}
                 <div
                     ref={navbarCollapseRef}
                     className="collapse navbar-collapse ms-auto"
                     id="navbarNav"
+                // onMouseLeave={handleMouseLeaveNavbar} // This line has been removed
                 >
                     <form className="d-flex my-2 my-lg-0 me-lg-3" role="search" onSubmit={handleSearchSubmit}>
                         <div className="input-group">
