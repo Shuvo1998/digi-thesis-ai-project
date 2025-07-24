@@ -1,33 +1,34 @@
 // backend/models/Thesis.js
-
 const mongoose = require('mongoose');
 
 const ThesisSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'User', // References the User model
+        ref: 'user',
         required: true
     },
     title: {
         type: String,
-        required: true,
-        trim: true
+        required: true
     },
     abstract: {
         type: String,
-        required: true,
-        trim: true
+        required: true
     },
     keywords: {
         type: [String], // Array of strings
         default: []
     },
-    filePath: { // Path to the uploaded PDF file on the server
+    filePath: {
         type: String,
         required: true
     },
-    fileName: { // Original name of the uploaded file
+    fileName: {
         type: String,
+        required: true
+    },
+    fileSize: {
+        type: Number,
         required: true
     },
     uploadDate: {
@@ -39,14 +40,31 @@ const ThesisSchema = new mongoose.Schema({
         enum: ['pending', 'approved', 'rejected'],
         default: 'pending'
     },
-    plagiarismResult: { // Field to store plagiarism check results
+    plagiarismResult: {
         type: String,
-        default: null
+        default: 'Not checked'
     },
-    grammarResult: { // ADDED: Field to store grammar correction results
-        type: String, // Will store the text output from the AI model
-        default: null // Default to null until checked
+    grammarResult: {
+        type: String,
+        default: 'Not checked'
+    },
+    // NEW FIELDS ADDED BELOW
+    authorName: {
+        type: String,
+        required: true // Making author name required
+    },
+    department: {
+        type: String,
+        required: true
+    },
+    submissionYear: {
+        type: Number,
+        required: true
+    },
+    isPublic: {
+        type: Boolean,
+        default: true // Default to true for now, to keep existing public display working
     }
 });
 
-module.exports = mongoose.model('Thesis', ThesisSchema);
+module.exports = mongoose.model('thesis', ThesisSchema);
