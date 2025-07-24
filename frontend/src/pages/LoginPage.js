@@ -4,7 +4,8 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faLock, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar'; // <-- IMPORT SNACKBAR
+import Snackbar from '../components/Common/Snackbar';
+import { jwtDecode } from 'jwt-decode'; // ADDED: Import jwtDecode
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
@@ -13,16 +14,14 @@ const LoginPage = () => {
     });
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { user, login } = useContext(UserContext); // Get the login function from context, and current user state
+    const { user, login } = useContext(UserContext);
 
-    // ADDED: State for Snackbar
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
         type: 'info',
     });
 
-    // Handler to close Snackbar
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
     };
@@ -32,13 +31,13 @@ const LoginPage = () => {
     const onChange = e => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (error) setError('');
-        if (snackbar.show) setSnackbar({ ...snackbar, show: false }); // Clear snackbar on input change
+        if (snackbar.show) setSnackbar({ ...snackbar, show: false });
     };
 
     const onSubmit = async e => {
         e.preventDefault();
-        setError(''); // Clear previous errors
-        setSnackbar({ ...snackbar, show: false }); // Clear previous snackbar
+        setError('');
+        setSnackbar({ ...snackbar, show: false });
 
         try {
             const res = await axios.post('http://localhost:5000/api/auth/login', {
@@ -46,34 +45,39 @@ const LoginPage = () => {
                 password
             });
 
-            console.log('Login successful:', res.data);
-            const { token, user: userData } = res.data; // Destructure user data (including role) from response
+            const { token } = res.data; // Backend only sends 'token'
 
-            // Ensure userData.role defaults to 'user' if not provided by backend
-            const userRole = userData && userData.role ? userData.role : 'user'; // MODIFIED LINE
+            // ADDED: Decode the token to get user details including role
+            const decodedToken = jwtDecode(token);
+            const userDataFromToken = decodedToken.user; // This should contain id and role from JWT payload
 
-            login({ token, ...userData, role: userRole }); // Pass token and all user data to login context function, with guaranteed role
+            // Combine token with decoded user data
+            const userToLogin = {
+                token,
+                id: userDataFromToken.id,
+                username: userDataFromToken.username || email, // Use username from token, or fallback to email
+                email: email, // Email comes from form input
+                role: userDataFromToken.role || 'user', // Get role from token, fallback to 'user'
+            };
 
-            // Replaced alert with Snackbar for success
+            login(userToLogin); // Pass the combined user object to context login function
+
             setSnackbar({
                 show: true,
                 message: 'Login successful! Welcome back.',
                 type: 'success',
             });
 
-            // Delay navigation slightly to allow snackbar to be seen
             setTimeout(() => {
-                // Check user role for redirection, safely accessing userRole
-                if (userRole === 'admin' || userRole === 'supervisor') { // MODIFIED LINE
-                    navigate('/admin-dashboard'); // Redirect admin/supervisor to admin dashboard
+                if (userToLogin.role === 'admin' || userToLogin.role === 'supervisor') {
+                    navigate('/admin-dashboard');
                 } else {
-                    navigate('/dashboard'); // Redirect regular users to their dashboard
+                    navigate('/dashboard');
                 }
-            }, snackbar.duration || 3000); // Use snackbar's default duration or specify
+            }, snackbar.duration || 3000);
 
         } catch (err) {
             console.error('Login failed:', err.response ? err.response.data : err.message);
-            // Replaced alert with Snackbar for error
             setSnackbar({
                 show: true,
                 message: err.response && err.response.data && err.response.data.errors
@@ -81,7 +85,6 @@ const LoginPage = () => {
                     : 'Login failed. Please check your credentials.',
                 type: 'error',
             });
-            // Also set the error state for the alert-danger display below the heading
             setError(err.response && err.response.data && err.response.data.errors
                 ? err.response.data.errors[0].msg
                 : 'Login failed. Please check your credentials.');
@@ -90,7 +93,6 @@ const LoginPage = () => {
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
-            {/* ADDED: Snackbar Component */}
             <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}

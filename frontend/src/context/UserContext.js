@@ -1,75 +1,93 @@
 // frontend/src/context/UserContext.js
-import React, { createContext, useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { createContext, useState, useEffect, useCallback } from 'react';
+import setAuthToken from '../utils/setAuthToken';
+import { jwtDecode } from 'jwt-decode';
+import axios from 'axios'; // Import axios for API calls
 
-const UserContext = createContext();
+export const UserContext = createContext();
 
-const UserProvider = ({ children }) => {
+export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true); // To indicate if user data is still being loaded
+    const [loading, setLoading] = useState(true);
 
-    // Function to load user from localStorage and validate token
-    const loadUser = async () => {
-        const storedToken = localStorage.getItem('token');
-        if (storedToken) {
-            // Decode the token to get user info (including role)
-            // Note: This is a client-side decode, not verification.
-            // Verification happens on the backend.
+    // Memoized logout function
+    const logout = useCallback(() => {
+        localStorage.removeItem('token');
+        setAuthToken(null); // Clear token from Axios headers
+        setUser(null); // Clear user state
+        console.log('User logged out. User state:', null); // Log state change
+    }, []); // No dependencies, so it's stable
+
+    // Function to load user from token and fetch full details (called on initial app load/refresh)
+    const loadUser = useCallback(async () => {
+        const token = localStorage.getItem('token');
+        if (token) {
+            setAuthToken(token); // Set token in Axios headers for subsequent requests
             try {
-                // A simple way to decode JWT without a library for basic info
-                const decoded = JSON.parse(atob(storedToken.split('.')[1]));
-                // The user object in the token payload is usually under a 'user' key
-                const userDataFromToken = decoded.user;
+                const decoded = jwtDecode(token);
+                // Check if token is expired
+                if (decoded.exp * 1000 < Date.now()) {
+                    console.log('Token expired. Logging out.');
+                    logout(); // Log out if token is expired
+                    return;
+                }
 
-                // Optionally, make a call to /api/auth to get fresh user data and verify token
-                // This is more secure but adds a network request on every page load
-                const res = await axios.get('http://localhost:5000/api/auth', {
-                    headers: { 'x-auth-token': storedToken }
-                });
+                // Fetch full user details from backend using the token
+                // This relies on your backend's /api/auth route to return the full user object
+                const res = await axios.get('http://localhost:5000/api/auth');
+                const userDataFromBackend = res.data;
 
-                // Update user state with full user data from backend and the token
-                // The backend /api/auth route returns the user object without password
-                // We combine it with the token for convenience.
-                setUser({
-                    token: storedToken,
-                    id: res.data._id, // Get ID from backend response
-                    username: res.data.username, // Get username from backend response
-                    email: res.data.email, // Get email from backend response
-                    role: res.data.role // ADDED: Get role from backend response
-                });
-
+                const newUserState = {
+                    id: userDataFromBackend._id, // Use _id from backend response
+                    username: userDataFromBackend.username,
+                    email: userDataFromBackend.email,
+                    role: userDataFromBackend.role || 'user', // Default to 'user' if role is missing
+                    token: token // Store the token itself in the user object
+                };
+                setUser(newUserState);
+                console.log('User loaded from token and backend. User state:', newUserState);
             } catch (err) {
-                console.error('Failed to load user or token invalid:', err);
-                localStorage.removeItem('token'); // Clear invalid token
-                setUser(null);
+                console.error('Failed to decode token or fetch user data:', err);
+                // If there's an error fetching user data (e.g., token invalid on backend), log out
+                logout();
             }
+        } else {
+            setUser(null); // No token, ensure user is null
+            console.log('No token found. User state:', null); // Log state change
         }
-        setLoading(false); // Finished loading user
-    };
+        setLoading(false);
+    }, [logout]); // Dependency on logout
 
-    // Run once on component mount to load user
+    // Effect to load user on initial mount
     useEffect(() => {
         loadUser();
-    }, []);
+    }, [loadUser]); // Dependency on loadUser to re-run if loadUser itself changes (due to useCallback)
 
-    // Login function: stores token and sets user state
-    const login = async (userData) => { // userData now expects { token, username, email, role }
-        localStorage.setItem('token', userData.token);
-        // Set user state with all provided data, including role
-        setUser({
-            token: userData.token,
-            id: userData.id, // Assuming ID might come from backend on login/register
-            username: userData.username,
-            email: userData.email,
-            role: userData.role // ADDED: Store the role here
-        });
-    };
+    // Login function (called after successful login/registration)
+    const login = useCallback(async ({ token }) => { // MODIFIED: Only expect 'token' as argument
+        localStorage.setItem('token', token);
+        setAuthToken(token); // Set token in Axios headers immediately for the next request
 
-    // Logout function: clears token and user state
-    const logout = () => {
-        localStorage.removeItem('token');
-        setUser(null);
-    };
+        try {
+            // Fetch full user details from backend after setting token
+            const res = await axios.get('http://localhost:5000/api/auth');
+            const userDataFromBackend = res.data;
+
+            const newUserState = {
+                id: userDataFromBackend._id,
+                username: userDataFromBackend.username,
+                email: userDataFromBackend.email,
+                role: userDataFromBackend.role || 'user',
+                token: token
+            };
+            setUser(newUserState); // Update user state with complete data
+            console.log('User logged in. User state:', newUserState);
+        } catch (err) {
+            console.error('Failed to fetch user data after login:', err);
+            // If fetching user data fails after getting a token, it indicates an issue, so log out
+            logout();
+        }
+    }, [logout]); // Dependency on logout
 
     return (
         <UserContext.Provider value={{ user, loading, login, logout }}>
@@ -77,5 +95,3 @@ const UserProvider = ({ children }) => {
         </UserContext.Provider>
     );
 };
-
-export { UserContext, UserProvider };
