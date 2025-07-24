@@ -1,9 +1,10 @@
 // frontend/src/pages/HomePage.js
 import React, { useState, useRef, useEffect, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom'; // Ensure Link is imported
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate
+    faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate,
+    faCheckCircle, faPenFancy, faTasks // Specific icons for features
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
 import axios from 'axios';
@@ -46,7 +47,7 @@ const HomePage = () => {
     };
 
     const handleDownloadPublicThesis = (filePath, fileName) => {
-        // UPDATED: Use the live Render backend URL
+        // Backend URL is now hardcoded
         const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
@@ -56,7 +57,7 @@ const HomePage = () => {
         try {
             setLoadingPublicTheses(true);
             setPublicThesesError('');
-            // UPDATED: Use the live Render backend URL
+            // Backend URL is now hardcoded
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/public');
             setPublicTheses(res.data);
             setLoadingPublicTheses(false);
@@ -96,6 +97,27 @@ const HomePage = () => {
                 type: "spring",
                 stiffness: 100,
                 damping: 10
+            }
+        }
+    };
+
+    // New variants for feature cards
+    const featureCardVariants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                type: "spring",
+                stiffness: 80,
+                damping: 10
+            }
+        },
+        hover: {
+            scale: 1.05,
+            boxShadow: "0px 10px 20px rgba(0,0,0,0.2)",
+            transition: {
+                duration: 0.3
             }
         }
     };
@@ -276,30 +298,53 @@ const HomePage = () => {
             </section>
 
             <section className="features-section py-5 bg-light mt-5">
-                <h2 className="mb-4">Key Features</h2>
-                <div className="row justify-content-center">
-                    <div className="col-md-3">
-                        <div className="card p-3 mb-3">
-                            <FontAwesomeIcon icon={faHome} size="3x" className="mb-3" />
-                            <h4>Plagiarism Check</h4>
-                            <p>Ensure originality with advanced AI detection.</p>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card p-3 mb-3">
-                            <FontAwesomeIcon icon={faHome} size="3x" className="mb-3" />
-                            <h4>Grammar Correction</h4>
-                            <p>Improve your writing with intelligent suggestions.</p>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <div className="card p-3 mb-3">
-                            <FontAwesomeIcon icon={faHome} size="3x" className="mb-3" />
-                            <h4>Thesis Management</h4>
-                            <p>Organize and track your research progress.</p>
-                        </div>
-                    </div>
-                </div>
+                <h2 className="mb-4 text-dark">Key Features</h2>
+                <motion.div
+                    className="row justify-content-center g-4"
+                    variants={containerVariants}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true, amount: 0.3 }}
+                >
+                    {/* Plagiarism Check Feature Card (Clickable) */}
+                    <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
+                        <Link to="/dashboard" className="feature-card-link"> {/* Link to Dashboard */}
+                            <div className="card p-4 h-100">
+                                <div className="feature-icon-circle mx-auto mb-3">
+                                    <FontAwesomeIcon icon={faCheckCircle} size="3x" />
+                                </div>
+                                <h4 className="text-dark">Plagiarism Check</h4>
+                                <p className="text-muted">Ensure originality and academic integrity with advanced AI detection.</p>
+                            </div>
+                        </Link>
+                    </motion.div>
+
+                    {/* Grammar Correction Feature Card (Clickable) */}
+                    <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
+                        <Link to="/dashboard" className="feature-card-link"> {/* Link to Dashboard */}
+                            <div className="card p-4 h-100">
+                                <div className="feature-icon-circle mx-auto mb-3">
+                                    <FontAwesomeIcon icon={faPenFancy} size="3x" />
+                                </div>
+                                <h4 className="text-dark">Grammar Correction</h4>
+                                <p className="text-muted">Refine your writing, improve clarity, and eliminate errors with intelligent suggestions.</p>
+                            </div>
+                        </Link>
+                    </motion.div>
+
+                    {/* Thesis Management Feature Card (Clickable) */}
+                    <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
+                        <Link to="/dashboard" className="feature-card-link"> {/* Link to Dashboard */}
+                            <div className="card p-4 h-100">
+                                <div className="feature-icon-circle mx-auto mb-3">
+                                    <FontAwesomeIcon icon={faTasks} size="3x" />
+                                </div>
+                                <h4 className="text-dark">Thesis Management</h4>
+                                <p className="text-muted">Organize, track, and manage your research progress efficiently in one place.</p>
+                            </div>
+                        </Link>
+                    </motion.div>
+                </motion.div>
             </section>
         </div>
     );

@@ -254,7 +254,6 @@ p {
     border: none;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
-    /* ADDED: Cursor pointer for clickable indication */
     padding: 0.5rem;
     font-size: 1.1rem;
     z-index: 10;
@@ -521,6 +520,70 @@ p {
     color: var(--primary-color);
     /* Primary color for icons */
 }
+
+/* New styles for feature cards (from previous update) */
+.features-section .card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    border: none;
+    /* Remove default border */
+    border-radius: 15px;
+    /* Consistent with other cards */
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    /* Slightly stronger initial shadow */
+}
+
+.features-section .card:hover {
+    transform: translateY(-10px);
+    /* More pronounced lift on hover */
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+    /* Stronger shadow on hover */
+}
+
+.feature-icon-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background-color: var(--primary-color);
+    /* Background for the icon circle */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    /* Icon color */
+    font-size: 2.5rem;
+    /* Adjust icon size within circle */
+    margin-bottom: 1rem;
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    /* Shadow for the icon circle */
+    transition: background-color 0.3s ease, transform 0.3s ease;
+}
+
+.features-section .card:hover .feature-icon-circle {
+    background-color: #0056b3;
+    /* Darker primary on hover */
+    transform: scale(1.1);
+    /* Icon circle scales up slightly */
+}
+
+/* NEW: Styling for the Link wrapper around feature cards */
+.feature-card-link {
+    text-decoration: none;
+    /* Remove underline */
+    color: inherit;
+    /* Inherit text color from parent */
+    display: block;
+    /* Make the link fill the card area */
+    height: 100%;
+    /* Ensure the link takes full height of the card */
+}
+
+.feature-card-link:hover {
+    text-decoration: none;
+    /* Ensure no underline on hover */
+    color: inherit;
+    /* Ensure text color doesn't change on hover */
+}
+
 
 /* --- Public submissions section --- */
 .public-submissions-section {
