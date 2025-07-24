@@ -146,8 +146,6 @@ router.get('/pending', auth, async (req, res) => {
         }
 
         // Fetch all pending theses, populate user info
-        // Ensure that if 'isPublic' is missing from older documents, it doesn't cause an error.
-        // Mongoose handles default values on retrieval, but explicit query helps.
         const pendingTheses = await Thesis.find({ status: 'pending' })
             .sort({ uploadDate: -1 })
             .populate('user', ['username', 'email']);
@@ -179,7 +177,6 @@ router.get('/:id', auth, async (req, res) => {
         }
 
         // Check if the thesis is public and approved
-        // Added a check for thesis.isPublic to exist, as older documents might not have it
         const isPublicAndApproved = thesis.isPublic && thesis.status === 'approved';
 
         // Check if the logged-in user is the owner or an admin/supervisor
