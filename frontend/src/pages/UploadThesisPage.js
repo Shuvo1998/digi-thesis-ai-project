@@ -2,7 +2,7 @@
 import React, { useState, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faFileUpload, faBook, faPencilAlt, faTags, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faFileUpload, faBook, faPencilAlt, faTags, faSpinner, faUser, faBuilding, faCalendarAlt, faGlobe } from '@fortawesome/free-solid-svg-icons'; // Added new icons
 import { motion } from 'framer-motion';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
@@ -13,7 +13,12 @@ const UploadThesisPage = () => {
     const [thesisData, setThesisData] = useState({
         title: '',
         abstract: '',
-        keywords: ''
+        keywords: '',
+        // NEW STATES FOR NEW FIELDS
+        authorName: '',
+        department: '',
+        submissionYear: '',
+        isPublic: true // Default to public
     });
     const [isUploading, setIsUploading] = useState(false);
 
@@ -27,14 +32,18 @@ const UploadThesisPage = () => {
         type: 'info',
     });
 
-    const { title, abstract, keywords } = thesisData;
+    const { title, abstract, keywords, authorName, department, submissionYear, isPublic } = thesisData; // Destructure new fields
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
     };
 
     const onThesisDataChange = e => {
-        setThesisData({ ...thesisData, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setThesisData({
+            ...thesisData,
+            [name]: type === 'checkbox' ? checked : value
+        });
         setSnackbar({ ...snackbar, show: false });
     };
 
@@ -69,14 +78,25 @@ const UploadThesisPage = () => {
             return;
         }
 
-        if (!title.trim() || !abstract.trim()) {
+        // Client-side validation for new required fields
+        if (!title.trim() || !abstract.trim() || !authorName.trim() || !department.trim() || !submissionYear) {
             setSnackbar({
                 show: true,
-                message: 'Thesis Title and Abstract are required fields.',
+                message: 'Thesis Title, Abstract, Author Name, Department, and Submission Year are required fields.',
                 type: 'error',
             });
             return;
         }
+
+        if (isNaN(submissionYear) || submissionYear.length !== 4) {
+            setSnackbar({
+                show: true,
+                message: 'Submission Year must be a valid 4-digit number.',
+                type: 'error',
+            });
+            return;
+        }
+
 
         setIsUploading(true);
 
@@ -85,9 +105,13 @@ const UploadThesisPage = () => {
         formDataToSend.append('title', title.trim());
         formDataToSend.append('abstract', abstract.trim());
         formDataToSend.append('keywords', keywords.trim());
+        // APPEND NEW FIELDS TO FORMDATA
+        formDataToSend.append('authorName', authorName.trim());
+        formDataToSend.append('department', department.trim());
+        formDataToSend.append('submissionYear', submissionYear);
+        formDataToSend.append('isPublic', isPublic); // Boolean value directly
 
         try {
-            // UPDATED: Use the live Render backend URL
             const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/theses/upload', formDataToSend, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
@@ -102,7 +126,15 @@ const UploadThesisPage = () => {
                 type: 'success',
             });
             setSelectedFile(null);
-            setThesisData({ title: '', abstract: '', keywords: '' });
+            setThesisData({
+                title: '',
+                abstract: '',
+                keywords: '',
+                authorName: '',
+                department: '',
+                submissionYear: '',
+                isPublic: true
+            }); // Reset all fields
 
             setTimeout(() => {
                 navigate('/dashboard');
@@ -199,6 +231,62 @@ const UploadThesisPage = () => {
                         />
                     </motion.div>
 
+                    {/* NEW FIELD: Author Name */}
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="authorName" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faUser} className="me-2" /> Author Name
+                        </label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="authorName"
+                            name="authorName"
+                            placeholder="Enter author's full name"
+                            value={authorName}
+                            onChange={onThesisDataChange}
+                            required
+                            disabled={isUploading}
+                        />
+                    </motion.div>
+
+                    {/* NEW FIELD: Department */}
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="department" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faBuilding} className="me-2" /> Department
+                        </label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="department"
+                            name="department"
+                            placeholder="e.g., Computer Science, Electrical Engineering"
+                            value={department}
+                            onChange={onThesisDataChange}
+                            required
+                            disabled={isUploading}
+                        />
+                    </motion.div>
+
+                    {/* NEW FIELD: Submission Year */}
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="submissionYear" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faCalendarAlt} className="me-2" /> Submission Year
+                        </label>
+                        <input
+                            type="number"
+                            className="form-control"
+                            id="submissionYear"
+                            name="submissionYear"
+                            placeholder="e.g., 2023"
+                            value={submissionYear}
+                            onChange={onThesisDataChange}
+                            required
+                            disabled={isUploading}
+                            min="1900" // Example min year
+                            max={new Date().getFullYear()} // Max current year
+                        />
+                    </motion.div>
+
                     <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
                         <label htmlFor="abstract" className="form-label text-dark d-flex align-items-center">
                             <FontAwesomeIcon icon={faPencilAlt} className="me-2" /> Abstract
@@ -231,6 +319,26 @@ const UploadThesisPage = () => {
                             disabled={isUploading}
                         />
                     </motion.div>
+
+                    {/* NEW FIELD: isPublic Checkbox */}
+                    <motion.div className="mb-3 form-check text-start" variants={itemVariants}>
+                        <input
+                            type="checkbox"
+                            className="form-check-input"
+                            id="isPublic"
+                            name="isPublic"
+                            checked={isPublic}
+                            onChange={onThesisDataChange}
+                            disabled={isUploading}
+                        />
+                        <label className="form-check-label text-dark d-flex align-items-center" htmlFor="isPublic">
+                            <FontAwesomeIcon icon={faGlobe} className="me-2" /> Make Publicly Visible
+                        </label>
+                        <small className="form-text text-muted ms-4">
+                            If checked, your thesis will be visible to all users on the homepage.
+                        </small>
+                    </motion.div>
+
 
                     <input
                         type="file"
