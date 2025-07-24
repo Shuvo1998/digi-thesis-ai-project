@@ -6,4 +6,4 @@
 
         # Configuration files that might contain secrets (optional, if you manage them via env vars)
         # config/default.json
-        
+        uploads/
