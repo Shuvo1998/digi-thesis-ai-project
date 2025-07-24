@@ -54,7 +54,7 @@ router.post(
             const payload = {
                 user: {
                     id: user.id,
-                    role: user.role,
+                    role: user.role, // Include role in JWT payload
                     username: user.username, // Include username in JWT payload
                     email: user.email // Include email in JWT payload
                 },
@@ -77,7 +77,7 @@ router.post(
 );
 
 // @route   GET api/users/all
-// @desc    Get all users (accessible by admin/supervisor)
+// @desc    Get all users with pagination (accessible by admin/supervisor)
 // @access  Private (Admin/Supervisor)
 router.get(
     '/all',
@@ -85,11 +85,81 @@ router.get(
     authorizeRole('admin', 'supervisor'), // Only admin or supervisor roles
     async (req, res) => {
         try {
-            // Fetch all users, but exclude their passwords for security
-            const users = await User.find().select('-password').sort({ date: 1 }); // Sort by join date
-            res.json(users);
+            const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+            const limit = parseInt(req.query.limit) || 10; // Items per page, default to 10
+            const skipIndex = (page - 1) * limit; // Calculate how many documents to skip
+
+            // Get total count of users for pagination info
+            const totalUsers = await User.countDocuments();
+
+            // Fetch users with pagination, excluding passwords
+            const users = await User.find()
+                .select('-password')
+                .sort({ date: 1 }) // Sort by join date
+                .limit(limit)
+                .skip(skipIndex);
+
+            res.json({
+                users,
+                currentPage: page,
+                totalPages: Math.ceil(totalUsers / limit),
+                totalUsers,
+            });
         } catch (err) {
             console.error(err.message);
+            res.status(500).send('Server Error');
+        }
+    }
+);
+
+// @route   PUT api/users/role/:id (existing)
+// @desc    Update a user's role (accessible by admin/supervisor)
+// @access  Private (Admin/Supervisor)
+router.put(
+    '/role/:id',
+    auth, // Authenticated users only
+    authorizeRole('admin', 'supervisor'), // Only admin or supervisor roles
+    [
+        check('role', 'Valid role (user, supervisor, admin) is required').isIn(['user', 'supervisor', 'admin'])
+    ],
+    async (req, res) => {
+        const errors = validationResult(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({ errors: errors.array() });
+        }
+
+        const { role } = req.body; // New role from the request body
+        const userIdToUpdate = req.params.id; // ID of the user whose role is being updated
+
+        try {
+            let userToUpdate = await User.findById(userIdToUpdate);
+
+            if (!userToUpdate) {
+                return res.status(404).json({ msg: 'User not found' });
+            }
+
+            // Prevent an admin/supervisor from changing their own role via this endpoint
+            if (req.user.id === userIdToUpdate) {
+                return res.status(403).json({ msg: 'You cannot change your own role via this endpoint.' });
+            }
+
+            // Optional: Prevent supervisors from changing admin roles
+            if (req.user.role === 'supervisor' && userToUpdate.role === 'admin') {
+                return res.status(403).json({ msg: 'Supervisors cannot change administrator roles.' });
+            }
+
+            // Update the user's role
+            userToUpdate.role = role;
+            await userToUpdate.save();
+
+            // Return the updated user (without password)
+            res.json({ msg: `User role updated to ${role}`, user: userToUpdate.select('-password') });
+
+        } catch (err) {
+            console.error(err.message);
+            if (err.kind === 'ObjectId') {
+                return res.status(404).json({ msg: 'User not found' });
+            }
             res.status(500).send('Server Error');
         }
     }

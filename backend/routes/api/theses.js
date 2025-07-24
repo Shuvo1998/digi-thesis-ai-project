@@ -6,12 +6,12 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const pdf = require('pdf-parse');
-// const config = require('config'); // Still commented out for simulated AI
+const config = require('config');
 
 const auth = require('../../middleware/auth');
 const authorizeRole = require('../../middleware/role');
 const Thesis = require('../../models/Thesis');
-const User = require('../../models/User');
+const User = require('../../models/User'); // Import User model to populate user info
 
 // --- Multer Setup (existing) ---
 const storage = multer.diskStorage({
@@ -69,7 +69,7 @@ router.post(
                 keywords: keywords ? keywords.split(',').map(keyword => keyword.trim()) : [],
                 filePath: path.join('uploads', req.file.filename),
                 fileName: req.file.originalname,
-                status: 'pending'
+                status: 'pending' // Default status for new uploads
             });
 
             await newThesis.save();
@@ -91,7 +91,7 @@ router.post(
 
 // --- REORDERED ROUTES (existing) ---
 
-// @route   GET api/theses/public
+// @route   GET api/theses/public (existing)
 // @desc    Get all approved theses (publicly accessible)
 // @access  Public
 router.get('/public', async (req, res) => {
@@ -107,18 +107,35 @@ router.get('/public', async (req, res) => {
 });
 
 // @route   GET api/theses/pending
-// @desc    Get all pending theses (accessible by admin/supervisor)
+// @desc    Get all pending theses with pagination (accessible by admin/supervisor)
 // @access  Private (Admin/Supervisor)
 router.get(
     '/pending',
-    auth,
-    authorizeRole('admin', 'supervisor'),
+    auth, // Ensure user is authenticated
+    authorizeRole('admin', 'supervisor'), // Ensure user has 'admin' or 'supervisor' role
     async (req, res) => {
         try {
+            const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+            const limit = parseInt(req.query.limit) || 10; // Items per page, default to 10
+            const skipIndex = (page - 1) * limit; // Calculate how many documents to skip
+
+            // Get total count of pending theses for pagination info
+            const totalPendingTheses = await Thesis.countDocuments({ status: 'pending' });
+
+            // Find all theses with status 'pending'
+            // Populate the 'user' field to get username/email of the uploader
             const pendingTheses = await Thesis.find({ status: 'pending' })
-                .populate('user', ['username', 'email'])
-                .sort({ uploadDate: 1 });
-            res.json(pendingTheses);
+                .populate('user', ['username', 'email']) // Get uploader details
+                .sort({ uploadDate: 1 }) // Sort by oldest first for approval queue
+                .limit(limit)
+                .skip(skipIndex);
+
+            res.json({
+                theses: pendingTheses,
+                currentPage: page,
+                totalPages: Math.ceil(totalPendingTheses / limit),
+                totalTheses: totalPendingTheses,
+            });
         } catch (err) {
             console.error(err.message);
             res.status(500).send('Server Error');
@@ -126,41 +143,8 @@ router.get(
     }
 );
 
-// @route   GET api/theses/search
-// @desc    Search for approved theses by title, abstract, or keywords
-// @access  Public
-router.get('/search', async (req, res) => {
-    try {
-        const { q } = req.query; // Get the search query from URL parameters (e.g., ?q=machine learning)
 
-        if (!q) {
-            return res.status(400).json({ msg: 'Search query is required.' });
-        }
-
-        // Create a case-insensitive regex for searching
-        const searchRegex = new RegExp(q, 'i');
-
-        const searchResults = await Thesis.find({
-            status: 'approved', // Only search among approved theses
-            $or: [ // Search in title, abstract, or keywords
-                { title: { $regex: searchRegex } },
-                { abstract: { $regex: searchRegex } },
-                { keywords: { $regex: searchRegex } }
-            ]
-        })
-            .populate('user', ['username', 'email']) // Populate uploader details
-            .sort({ uploadDate: -1 }); // Sort by most recent
-
-        res.json(searchResults);
-
-    } catch (err) {
-        console.error(err.message);
-        res.status(500).send('Server Error');
-    }
-});
-
-
-// @route   GET api/theses
+// @route   GET api/theses (existing)
 // @desc    Get all theses for the authenticated user
 // @access  Private
 router.get('/', auth, async (req, res) => {
@@ -174,7 +158,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 
-// @route   GET api/theses/:id
+// @route   GET api/theses/:id (existing)
 // @desc    Get a single thesis by ID (only if owned by authenticated user)
 // @access  Private
 router.get('/:id', auth, async (req, res) => {
@@ -201,7 +185,7 @@ router.get('/:id', auth, async (req, res) => {
 
 
 // @route   POST api/theses/check-plagiarism/:id (existing)
-// @desc    Trigger plagiarism check for a thesis using a simulated AI
+// @desc    Trigger plagiarism check for a thesis using Gemini API
 // @access  Private (Owner or Admin/Supervisor)
 router.post(
     '/check-plagiarism/:id',
@@ -214,52 +198,81 @@ router.post(
                 return res.status(404).json({ msg: 'Thesis not found' });
             }
 
+            // Authorization: Only the owner or an admin/supervisor can trigger the check
             if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
                 return res.status(401).json({ msg: 'User not authorized to perform this action.' });
             }
 
+            // Construct the absolute path to the PDF file
             const pdfFilePath = path.join(__dirname, '..', '..', thesis.filePath);
 
+            // Check if the file exists
             if (!fs.existsSync(pdfFilePath)) {
                 return res.status(404).json({ msg: 'Thesis PDF file not found on server.' });
             }
 
+            // Read PDF file as buffer
             const dataBuffer = fs.readFileSync(pdfFilePath);
+
+            // Parse PDF to extract text
             const data = await pdf(dataBuffer);
             const thesisText = data.text;
 
-            if (!thesisText || thesisText.trim().length < 50) {
+            if (!thesisText || thesisText.trim().length < 50) { // Minimum text length for meaningful check
                 return res.status(400).json({ msg: 'Could not extract sufficient text from PDF for plagiarism check.' });
             }
 
-            // --- SIMULATED Plagiarism Check Logic ---
-            let plagiarismResultText;
-            const randomSimilarity = Math.floor(Math.random() * 100);
+            // --- Call Gemini API for Plagiarism Check ---
+            const prompt = `Perform a plagiarism check on the following academic text. Identify any highly similar phrases or structures that suggest direct copying from common sources or general knowledge. Provide a summary of potential plagiarism, including any suspicious sections or a percentage of similarity if possible. If no plagiarism is found, state that clearly.
 
-            if (thesisText.toLowerCase().includes('lorem ipsum dolor sit amet')) {
-                plagiarismResultText = `High similarity detected (approx. 85%) due to common placeholder text. Please review.`;
-            } else if (randomSimilarity > 70) {
-                plagiarismResultText = `Plagiarism detected: ${randomSimilarity}% similarity with various common online sources. Review required.`;
-            } else if (randomSimilarity > 30) {
-                plagiarismResultText = `Minor similarity detected: ${randomSimilarity}% similarity, possibly due to common phrases or citations.`;
-            } else {
-                plagiarismResultText = `No significant plagiarism detected. Similarity: ${randomSimilarity}%.`;
+      Text to check:
+      "${thesisText.substring(0, 10000)}..." // Limit text to 10,000 characters for prompt safety
+      `;
+
+            // Get Gemini API Key from config
+            const geminiApiKey = config.get('geminiApiKey');
+            if (!geminiApiKey) {
+                console.error('Gemini API Key is not defined in config/default.json');
+                return res.status(500).json({ msg: 'Server configuration error: Gemini API Key missing.' });
             }
 
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`;
 
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }],
+            };
+
+            const geminiResponse = await fetch(apiUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            const geminiResult = await geminiResponse.json();
+
+            let plagiarismResultText = 'Plagiarism check could not be completed.';
+            if (geminiResult.candidates && geminiResult.candidates.length > 0 &&
+                geminiResult.candidates[0].content && geminiResult.candidates[0].content.parts &&
+                geminiResult.candidates[0].content.parts.length > 0) {
+                plagiarismResultText = geminiResult.candidates[0].content.parts[0].text;
+            } else {
+                console.warn('Gemini API response structure unexpected:', geminiResult);
+                plagiarismResultText = `Gemini API did not return a valid result. Response: ${JSON.stringify(geminiResult)}`;
+            }
+
+            // Update the thesis document with the plagiarism result
             thesis.plagiarismResult = plagiarismResultText;
             await thesis.save();
 
             res.json({
-                msg: 'Simulated plagiarism check completed successfully. Results saved to thesis.',
+                msg: 'Plagiarism check initiated successfully. Results saved to thesis.',
                 plagiarismResult: plagiarismResultText,
                 thesisId: thesis._id
             });
 
         } catch (err) {
-            console.error('Error during simulated plagiarism check:', err.message);
-            res.status(500).send('Server Error during simulated plagiarism check.');
+            console.error('Error during plagiarism check:', err.message);
+            res.status(500).send('Server Error during plagiarism check.');
         }
     }
 );
@@ -278,17 +291,23 @@ router.post(
                 return res.status(404).json({ msg: 'Thesis not found' });
             }
 
+            // Authorization: Only the owner or an admin/supervisor can trigger the check
             if (thesis.user.toString() !== req.user.id && req.user.role !== 'admin' && req.user.role !== 'supervisor') {
                 return res.status(401).json({ msg: 'User not authorized to perform this action.' });
             }
 
+            // Construct the absolute path to the PDF file
             const pdfFilePath = path.join(__dirname, '..', '..', thesis.filePath);
 
+            // Check if the file exists
             if (!fs.existsSync(pdfFilePath)) {
                 return res.status(404).json({ msg: 'Thesis PDF file not found on server.' });
             }
 
+            // Read PDF file as buffer
             const dataBuffer = fs.readFileSync(pdfFilePath);
+
+            // Parse PDF to extract text
             const data = await pdf(dataBuffer);
             const thesisText = data.text;
 
@@ -310,8 +329,10 @@ router.post(
                 grammarResultText = `Original Text Snippet:\n"${originalTextSnippet}"\n\nNo significant grammar errors detected in this snippet.`;
             }
 
+            // Simulate a delay for the "AI" processing
             await new Promise(resolve => setTimeout(resolve, 2500));
 
+            // Update the thesis document with the grammar result
             thesis.grammarResult = grammarResultText;
             await thesis.save();
 
@@ -474,5 +495,5 @@ router.delete('/:id', auth, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-
+// ADDED: Missing closing curly brace for the router.delete callback function
 module.exports = router;
