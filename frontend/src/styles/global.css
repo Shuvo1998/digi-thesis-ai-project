@@ -209,7 +209,7 @@ p {
     /* Subtle glow */
 }
 
-/* --- Search Input Group Enhancements (NEW) --- */
+/* --- Search Input Group Enhancements --- */
 .search-input-group {
     position: relative;
     /* For positioning the clear button */
@@ -254,6 +254,7 @@ p {
     border: none;
     color: rgba(255, 255, 255, 0.7);
     cursor: pointer;
+    /* ADDED: Cursor pointer for clickable indication */
     padding: 0.5rem;
     font-size: 1.1rem;
     z-index: 10;
