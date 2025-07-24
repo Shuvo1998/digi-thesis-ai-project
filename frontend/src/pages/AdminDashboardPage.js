@@ -46,13 +46,14 @@ const AdminDashboardPage = () => {
         try {
             setLoadingTheses(true);
             setError('');
-            // UPDATED: Use the live Render backend URL
+            // Backend URL is now hardcoded
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/pending', {
                 headers: {
                     'x-auth-token': user.token,
                 },
             });
-            setPendingTheses(res.data);
+            // CORRECTED: Access the 'theses' array from the response data
+            setPendingTheses(res.data.theses);
             setLoadingTheses(false);
         } catch (err) {
             console.error('Failed to fetch pending theses:', err.response ? err.response.data : err.message);
@@ -76,7 +77,7 @@ const AdminDashboardPage = () => {
             return;
         }
         try {
-            // UPDATED: Use the live Render backend URL
+            // Backend URL is now hardcoded
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/approve/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
@@ -97,7 +98,7 @@ const AdminDashboardPage = () => {
         }
         if (window.confirm('Are you sure you want to reject this thesis?')) {
             try {
-                // UPDATED: Use the live Render backend URL
+                // Backend URL is now hardcoded
                 await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/reject/${thesisId}`, {}, {
                     headers: {
                         'x-auth-token': user.token,
@@ -113,7 +114,7 @@ const AdminDashboardPage = () => {
     };
 
     const handleDownload = (filePath, fileName) => {
-        // UPDATED: Use the live Render backend URL
+        // Backend URL is now hardcoded
         const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
@@ -130,7 +131,7 @@ const AdminDashboardPage = () => {
         }
 
         try {
-            // UPDATED: Use the live Render backend URL
+            // Backend URL is now hardcoded
             const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
@@ -160,7 +161,7 @@ const AdminDashboardPage = () => {
         }
 
         try {
-            // UPDATED: Use the live Render backend URL
+            // Backend URL is now hardcoded
             const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`, {}, {
                 headers: {
                     'x-auth-token': user.token,
@@ -208,6 +209,7 @@ const AdminDashboardPage = () => {
                 <FontAwesomeIcon icon={faClipboardList} className="me-3" /> Pending Theses for Approval
             </h1>
 
+            {/* Check if pendingTheses.length is 0, which means the 'theses' array is empty */}
             {pendingTheses.length === 0 ? (
                 <div className="text-center text-white-50">
                     <p className="lead">No pending theses found at the moment.</p>
