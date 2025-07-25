@@ -6,9 +6,6 @@ import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSpinner,
-    faCheckCircle,
-    faTimesCircle,
-    faSearch,
     faUserCog,
     faBookOpen,
     faSyncAlt
@@ -148,9 +145,9 @@ const AdminDashboardPage = () => {
 
     if (userLoading) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
-                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-500" />
-                <p className="ml-3 text-lg text-gray-600">Loading user data...</p>
+            <div className="min-h-screen flex items-center justify-center bg-gray-900 font-inter"> {/* Changed bg-gray-100 to bg-gray-900 */}
+                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-400" /> {/* Adjusted spinner color */}
+                <p className="ml-3 text-lg text-gray-300">Loading user data...</p> {/* Adjusted text color */}
             </div>
         );
     }
@@ -160,23 +157,23 @@ const AdminDashboardPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-8 font-inter">
-            <div className="max-w-7xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-xl">
-                <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-800 mb-6">
+        <div className="min-h-screen bg-gray-900 p-4 sm:p-6 lg:p-8 font-inter"> {/* Changed bg-gray-100 to bg-gray-900 */}
+            <div className="max-w-7xl mx-auto bg-gray-800 p-6 sm:p-8 rounded-lg shadow-xl"> {/* Changed bg-white to bg-gray-800 */}
+                <h1 className="text-3xl sm:text-4xl font-bold text-center text-gray-100 mb-6"> {/* Changed text-gray-800 to text-gray-100 */}
                     Admin/Supervisor Dashboard
                 </h1>
 
                 <div className="flex justify-center mb-6 space-x-4">
                     <button
                         onClick={() => setShowUserManagement(false)}
-                        className={`px-6 py-3 rounded-md text-lg font-semibold transition duration-300 ${!showUserManagement ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                        className={`px-6 py-3 rounded-md text-lg font-semibold transition duration-300 ${!showUserManagement ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
                     >
                         <FontAwesomeIcon icon={faBookOpen} className="mr-2" /> Pending Theses
                     </button>
                     {user.role === 'admin' && (
                         <button
                             onClick={() => setShowUserManagement(true)}
-                            className={`px-6 py-3 rounded-md text-lg font-semibold transition duration-300 ${showUserManagement ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                            className={`px-6 py-3 rounded-md text-lg font-semibold transition duration-300 ${showUserManagement ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-700 text-gray-200 hover:bg-gray-600'}`}
                         >
                             <FontAwesomeIcon icon={faUserCog} className="mr-2" /> User Management
                         </button>
@@ -185,7 +182,7 @@ const AdminDashboardPage = () => {
 
                 {showUserManagement && user.role === 'admin' ? (
                     <section className="user-management-section mt-8">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Manage Users</h2>
+                        <h2 className="text-2xl font-bold text-gray-100 mb-4 text-center">Manage Users</h2> {/* Changed text-gray-800 to text-gray-100 */}
                         <div className="flex justify-center mb-4">
                             <button
                                 onClick={() => fetchUsers(userPage)}
@@ -196,41 +193,41 @@ const AdminDashboardPage = () => {
                         </div>
                         {loadingUsers ? (
                             <div className="flex justify-center items-center h-48">
-                                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-500" />
-                                <p className="ml-3 text-lg text-gray-600">Loading users...</p>
+                                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-400" /> {/* Adjusted spinner color */}
+                                <p className="ml-3 text-lg text-gray-300">Loading users...</p> {/* Adjusted text color */}
                             </div>
                         ) : userManagementError ? (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                            <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded relative" role="alert"> {/* Adjusted error alert colors */}
                                 <strong className="font-bold">Error!</strong>
                                 <span className="block sm:inline"> {userManagementError}</span>
                             </div>
                         ) : users.length === 0 ? (
-                            <div className="text-center text-gray-600 text-lg py-10">
+                            <div className="text-center text-gray-300 text-lg py-10"> {/* Changed text-gray-600 to text-gray-300 */}
                                 <p className="lead">No users found in the database (excluding yourself).</p>
-                                <p className="text-sm text-gray-500">New users will appear here after registration.</p>
+                                <p className="text-sm text-gray-400">New users will appear here after registration.</p> {/* Adjusted text color */}
                             </div>
                         ) : (
                             <>
                                 <div className="overflow-x-auto">
-                                    <table className="min-w-full bg-white rounded-lg shadow overflow-hidden">
-                                        <thead className="bg-gray-200">
+                                    <table className="min-w-full bg-gray-700 rounded-lg shadow overflow-hidden"> {/* Changed bg-white to bg-gray-700 */}
+                                        <thead className="bg-gray-600"> {/* Changed bg-gray-200 to bg-gray-600 */}
                                             <tr>
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Username</th> {/* Changed to text-gray-800 */}
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Email</th>    {/* Changed to text-gray-800 */}
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Role</th>     {/* Changed to text-gray-800 */}
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Actions</th>  {/* Changed to text-gray-800 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-100">Username</th> {/* Changed to text-gray-100 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-100">Email</th>    {/* Changed to text-gray-100 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-100">Role</th>     {/* Changed to text-gray-100 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-100">Actions</th>  {/* Changed to text-gray-100 */}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {users.map((u) => (
-                                                <tr key={u._id} className="border-b border-gray-200 last:border-b-0">
-                                                    <td className="py-3 px-4 text-gray-900">{u.username}</td> {/* Changed to text-gray-900 */}
-                                                    <td className="py-3 px-4 text-gray-900">{u.email}</td>    {/* Changed to text-gray-900 */}
+                                                <tr key={u._id} className="border-b border-gray-500 last:border-b-0"> {/* Adjusted border color */}
+                                                    <td className="py-3 px-4 text-gray-200">{u.username}</td> {/* Changed to text-gray-200 */}
+                                                    <td className="py-3 px-4 text-gray-200">{u.email}</td>    {/* Changed to text-gray-200 */}
                                                     <td className="py-3 px-4">
                                                         <select
                                                             value={u.role}
                                                             onChange={(e) => handleUserRoleChange(u._id, e.target.value)}
-                                                            className="p-2 border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                                            className="p-2 border rounded-md bg-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-100"
                                                             disabled={u._id === user.id}
                                                         >
                                                             <option value="user">User</option>
@@ -251,17 +248,17 @@ const AdminDashboardPage = () => {
                                         <button
                                             onClick={() => setUserPage(userPage - 1)}
                                             disabled={userPage === 1}
-                                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
                                         >
                                             Previous
                                         </button>
-                                        <span className="text-lg text-gray-700">
+                                        <span className="text-lg text-gray-300"> {/* Adjusted text color */}
                                             Page {userPage} of {userTotalPages}
                                         </span>
                                         <button
                                             onClick={() => setUserPage(userPage + 1)}
                                             disabled={userPage === userTotalPages}
-                                            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
                                         >
                                             Next
                                         </button>
@@ -272,7 +269,7 @@ const AdminDashboardPage = () => {
                     </section>
                 ) : (
                     <section className="pending-theses-section mt-8">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Pending Theses for Review</h2>
+                        <h2 className="text-2xl font-bold text-gray-100 mb-4 text-center">Pending Theses for Review</h2> {/* Changed text-gray-800 to text-gray-100 */}
                         <div className="flex justify-center mb-4">
                             <button
                                 onClick={fetchPendingTheses}
@@ -283,18 +280,18 @@ const AdminDashboardPage = () => {
                         </div>
                         {loadingTheses ? (
                             <div className="flex justify-center items-center h-48">
-                                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-500" />
-                                <p className="ml-3 text-lg text-gray-600">Loading pending theses...</p>
+                                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-400" /> {/* Adjusted spinner color */}
+                                <p className="ml-3 text-lg text-gray-300">Loading pending theses...</p> {/* Adjusted text color */}
                             </div>
                         ) : error ? (
-                            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                            <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded relative" role="alert"> {/* Adjusted error alert colors */}
                                 <strong className="font-bold">Error!</strong>
                                 <span className="block sm:inline"> {error}</span>
                             </div>
                         ) : pendingTheses.length === 0 ? (
-                            <div className="text-center text-gray-600 text-lg py-10">
+                            <div className="text-center text-gray-300 text-lg py-10"> {/* Changed text-gray-600 to text-gray-300 */}
                                 <p className="lead">No pending theses found.</p>
-                                <p className="text-sm text-gray-500">New submissions will appear here for your review.</p>
+                                <p className="text-sm text-gray-400">New submissions will appear here for your review.</p> {/* Adjusted text color */}
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
