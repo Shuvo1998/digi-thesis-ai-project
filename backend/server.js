@@ -24,9 +24,12 @@ app.use('/api/profile', require('./routes/api/profile'));
 app.use('/api/theses', require('./routes/api/theses'));
 
 // Serve static files from the 'uploads' directory
+// This path is relative to the backend service's root, which is correct.
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Serve static assets in production
+// REMOVED: The block for serving frontend static assets in production.
+// This is handled by Vercel, not the Render backend.
+/*
 if (process.env.NODE_ENV === 'production') {
     // Set static folder
     app.use(express.static('frontend/build'));
@@ -35,6 +38,7 @@ if (process.env.NODE_ENV === 'production') {
         res.sendFile(path.resolve(__dirname, 'frontend', 'build', 'index.html'));
     });
 }
+*/
 
 const PORT = process.env.PORT || 10000; // Use port 10000 for Render
 
