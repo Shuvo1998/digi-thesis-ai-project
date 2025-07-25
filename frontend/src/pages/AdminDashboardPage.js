@@ -6,40 +6,37 @@ import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSpinner,
+    faCheckCircle,
+    faTimesCircle,
+    faSearch,
     faUserCog,
     faBookOpen,
-    faSyncAlt // Added for refresh button
+    faSyncAlt
 } from '@fortawesome/free-solid-svg-icons';
 import ThesisCard from '../components/Thesis/ThesisCard';
-// Snackbar is now rendered globally by UserContext, no need to import/render here
 
 const AdminDashboardPage = () => {
     const navigate = useNavigate();
     const { user, loading: userLoading, showSnackbar } = useContext(UserContext);
 
-    // State for pending theses
     const [pendingTheses, setPendingTheses] = useState([]);
     const [loadingTheses, setLoadingTheses] = useState(true);
-    const [error, setError] = useState(''); // For pending theses section errors
+    const [error, setError] = useState('');
 
-    // State to toggle between pending theses and user management views
-    const [showUserManagement, setShowUserManagement] = useState(false); // Default to false (Pending Theses)
+    const [showUserManagement, setShowUserManagement] = useState(false);
 
-    // States for user management
     const [users, setUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
-    const [userManagementError, setUserManagementError] = useState(''); // For user management section errors
+    const [userManagementError, setUserManagementError] = useState('');
     const [userPage, setUserPage] = useState(1);
     const [userTotalPages, setUserTotalPages] = useState(1);
 
-    // --- Fetching Functions (Wrapped in useCallback) ---
     const fetchPendingTheses = useCallback(async () => {
         setLoadingTheses(true);
         setError('');
         try {
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/pending');
             setPendingTheses(Array.isArray(res.data.theses) ? res.data.theses : []);
-            // showSnackbar('Pending theses loaded successfully.', 'success'); // Commented to reduce excessive notifications
         } catch (err) {
             console.error('Failed to fetch pending theses:', err.response ? err.response.data : err.message);
             setError(err.response?.data?.msg || 'Failed to load pending theses. Please try again.');
@@ -58,7 +55,6 @@ const AdminDashboardPage = () => {
             setUsers(Array.isArray(res.data.users) ? res.data.users : []);
             setUserPage(res.data.currentPage || 1);
             setUserTotalPages(res.data.totalPages || 1);
-            // showSnackbar('Users loaded successfully.', 'success'); // Commented to reduce excessive notifications
         } catch (err) {
             console.error('Failed to fetch users:', err.response ? err.response.data : err.message);
             setUserManagementError(err.response?.data?.msg || 'Failed to load users. Please try again.');
@@ -69,7 +65,6 @@ const AdminDashboardPage = () => {
         }
     }, [showSnackbar]);
 
-    // --- Event Handlers (Wrapped in useCallback) ---
     const handleApprove = useCallback(async (id) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/approve/${id}`);
@@ -118,16 +113,13 @@ const AdminDashboardPage = () => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/users/role/${userId}`, { role: newRole });
             showSnackbar(`User role updated to ${newRole}`, 'success');
-            fetchUsers(userPage); // Refresh user list
+            fetchUsers(userPage);
         } catch (err) {
             console.error('Failed to update user role:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to update user role.', 'error');
         }
     }, [showSnackbar, fetchUsers, userPage]);
 
-    // --- Effects ---
-
-    // Effect for redirection based on user authentication and authorization
     useEffect(() => {
         if (!userLoading) {
             if (!user) {
@@ -140,7 +132,6 @@ const AdminDashboardPage = () => {
         }
     }, [user, userLoading, navigate, showSnackbar]);
 
-    // Effect to fetch initial data based on the active tab
     useEffect(() => {
         if (!userLoading && user && (user.role === 'admin' || user.role === 'supervisor')) {
             if (showUserManagement) {
@@ -151,15 +142,10 @@ const AdminDashboardPage = () => {
         }
     }, [user, userLoading, userPage, showUserManagement, fetchPendingTheses, fetchUsers]);
 
-    // Effect to reset userPage when toggling between views
     useEffect(() => {
-        setUserPage(1); // Always reset to page 1 when switching tabs
+        setUserPage(1);
     }, [showUserManagement]);
 
-
-    // --- Render Logic ---
-
-    // Show loading spinner while user data is being fetched initially
     if (userLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
@@ -169,7 +155,6 @@ const AdminDashboardPage = () => {
         );
     }
 
-    // If user is not authorized after loading, return null (redirection handled by useEffect)
     if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
         return null;
     }
@@ -188,7 +173,7 @@ const AdminDashboardPage = () => {
                     >
                         <FontAwesomeIcon icon={faBookOpen} className="mr-2" /> Pending Theses
                     </button>
-                    {user.role === 'admin' && ( // Only admin can see user management
+                    {user.role === 'admin' && (
                         <button
                             onClick={() => setShowUserManagement(true)}
                             className={`px-6 py-3 rounded-md text-lg font-semibold transition duration-300 ${showUserManagement ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
@@ -199,12 +184,11 @@ const AdminDashboardPage = () => {
                 </div>
 
                 {showUserManagement && user.role === 'admin' ? (
-                    // User Management Section
                     <section className="user-management-section mt-8">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Manage Users</h2>
                         <div className="flex justify-center mb-4">
                             <button
-                                onClick={() => fetchUsers(userPage)} // Refresh current page of users
+                                onClick={() => fetchUsers(userPage)}
                                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
                             >
                                 <FontAwesomeIcon icon={faSyncAlt} className="mr-2" /> Refresh Users
@@ -231,23 +215,23 @@ const AdminDashboardPage = () => {
                                     <table className="min-w-full bg-white rounded-lg shadow overflow-hidden">
                                         <thead className="bg-gray-200">
                                             <tr>
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600">Username</th>
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600">Email</th>
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600">Role</th>
-                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-600">Actions</th>
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Username</th> {/* Changed to text-gray-800 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Email</th>    {/* Changed to text-gray-800 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Role</th>     {/* Changed to text-gray-800 */}
+                                                <th className="py-3 px-4 text-left text-sm font-semibold text-gray-800">Actions</th>  {/* Changed to text-gray-800 */}
                                             </tr>
                                         </thead>
                                         <tbody>
                                             {users.map((u) => (
                                                 <tr key={u._id} className="border-b border-gray-200 last:border-b-0">
-                                                    <td className="py-3 px-4 text-gray-800">{u.username}</td>
-                                                    <td className="py-3 px-4 text-gray-800">{u.email}</td>
+                                                    <td className="py-3 px-4 text-gray-900">{u.username}</td> {/* Changed to text-gray-900 */}
+                                                    <td className="py-3 px-4 text-gray-900">{u.email}</td>    {/* Changed to text-gray-900 */}
                                                     <td className="py-3 px-4">
                                                         <select
                                                             value={u.role}
                                                             onChange={(e) => handleUserRoleChange(u._id, e.target.value)}
-                                                            className="p-2 border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                            disabled={u._id === user.id} // Prevent changing own role
+                                                            className="p-2 border rounded-md bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
+                                                            disabled={u._id === user.id}
                                                         >
                                                             <option value="user">User</option>
                                                             <option value="supervisor">Supervisor</option>
@@ -287,12 +271,11 @@ const AdminDashboardPage = () => {
                         )}
                     </section>
                 ) : (
-                    // Pending Theses Section
                     <section className="pending-theses-section mt-8">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Pending Theses for Review</h2>
                         <div className="flex justify-center mb-4">
                             <button
-                                onClick={fetchPendingTheses} // Refresh pending theses
+                                onClick={fetchPendingTheses}
                                 className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
                             >
                                 <FontAwesomeIcon icon={faSyncAlt} className="mr-2" /> Refresh Theses
@@ -319,7 +302,7 @@ const AdminDashboardPage = () => {
                                     <ThesisCard
                                         key={thesis._id}
                                         thesis={thesis}
-                                        isAdminView={true} // Indicate it's admin view for action buttons
+                                        isAdminView={true}
                                         onApprove={handleApprove}
                                         onReject={handleReject}
                                         onPlagiarismCheck={handlePlagiarismCheck}
