@@ -72,16 +72,17 @@ const Header = () => {
     };
 
     return (
-        <nav className="navbar navbar-expand-lg navbar-dark bg-transparent py-3 sticky-top">
-            <div className="container-fluid">
-                <Link className={`navbar-brand d-flex align-items-center ${isActive('/') ? 'active' : ''}`} to="/">
-                    <FontAwesomeIcon icon={faBookOpenReader} size="2x" className="me-2 brand-icon" />
-                    <span className="fw-bold fs-4">DigiThesis AI</span>
+        // Changed navbar background to a dark shade, added padding
+        <nav className="navbar navbar-expand-lg navbar-dark bg-gray-800 py-4 sticky-top shadow-md">
+            <div className="container-fluid max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"> {/* Added max-width and padding */}
+                <Link className={`navbar-brand flex items-center ${isActive('/') ? 'text-blue-400' : 'text-gray-100'}`} to="/"> {/* Adjusted text colors */}
+                    <FontAwesomeIcon icon={faBookOpenReader} size="2x" className="mr-2 text-blue-400" /> {/* Adjusted icon color */}
+                    <span className="font-bold text-2xl sm:text-3xl">DigiThesis AI</span> {/* Adjusted font size */}
                 </Link>
 
                 <button
                     ref={navbarTogglerRef}
-                    className="navbar-toggler"
+                    className="navbar-toggler focus:outline-none focus:ring-2 focus:ring-blue-500" // Tailwind focus ring
                     type="button"
                     data-bs-toggle="collapse"
                     data-bs-target="#navbarNav"
@@ -94,13 +95,13 @@ const Header = () => {
 
                 <div
                     ref={navbarCollapseRef}
-                    className="collapse navbar-collapse ms-auto"
+                    className="collapse navbar-collapse lg:justify-end" // Adjusted alignment for larger screens
                     id="navbarNav"
                 >
-                    <form className="d-flex my-2 my-lg-0 me-lg-3" role="search" onSubmit={handleSearchSubmit}>
-                        <div className="input-group search-input-group">
+                    <form className="flex my-2 lg:my-0 lg:mr-3 w-full lg:w-auto" role="search" onSubmit={handleSearchSubmit}> {/* Flexbox for search */}
+                        <div className="relative flex-grow"> {/* Relative for absolute positioning of clear button */}
                             <input
-                                className="form-control navbar-search-input"
+                                className="form-control px-4 py-2 rounded-md border border-gray-600 bg-gray-700 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full" // Dark theme input
                                 type="search"
                                 placeholder="Search thesis..."
                                 aria-label="Search"
@@ -110,61 +111,61 @@ const Header = () => {
                             {searchQuery && (
                                 <button
                                     type="button"
-                                    className="btn clear-search-btn"
+                                    className="absolute right-12 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-200 focus:outline-none" // Positioning and dark theme colors
                                     onClick={handleClearSearch}
                                     aria-label="Clear search"
                                 >
                                     <FontAwesomeIcon icon={faTimesCircle} />
                                 </button>
                             )}
-                            <button className="btn btn-outline-light input-group-text" type="submit">
+                            <button className="absolute right-0 top-0 h-full px-3 bg-blue-600 text-white rounded-r-md hover:bg-blue-700 transition duration-200 flex items-center justify-center" type="submit"> {/* Positioning and dark theme colors */}
                                 <FontAwesomeIcon icon={faSearch} />
                             </button>
                         </div>
                     </form>
 
-                    <ul className="navbar-nav mb-2 mb-lg-0 align-items-lg-center">
+                    <ul className="navbar-nav flex flex-col lg:flex-row lg:items-center lg:space-x-4 mt-2 lg:mt-0"> {/* Flexbox for nav items */}
                         {user ? (
                             <>
                                 <li className="nav-item">
-                                    <Link className={`nav-link text-white ${isActive('/dashboard') ? 'active' : ''}`} to="/dashboard">
-                                        <FontAwesomeIcon icon={faTachometerAlt} className="me-1" /> Dashboard
+                                    <Link className={`nav-link px-3 py-2 rounded-md text-gray-200 hover:bg-gray-700 transition duration-200 ${isActive('/dashboard') ? 'bg-gray-700 text-white' : ''}`} to="/dashboard"> {/* Dark theme nav link */}
+                                        <FontAwesomeIcon icon={faTachometerAlt} className="mr-2" /> Dashboard
                                     </Link>
                                 </li>
                                 <li className="nav-item">
-                                    <Link className={`nav-link text-white ${isActive('/upload-thesis') ? 'active' : ''}`} to="/upload-thesis">
-                                        <FontAwesomeIcon icon={faUpload} className="me-1" /> Upload Thesis
+                                    <Link className={`nav-link px-3 py-2 rounded-md text-gray-200 hover:bg-gray-700 transition duration-200 ${isActive('/upload-thesis') ? 'bg-gray-700 text-white' : ''}`} to="/upload-thesis"> {/* Dark theme nav link */}
+                                        <FontAwesomeIcon icon={faUpload} className="mr-2" /> Upload Thesis
                                     </Link>
                                 </li>
                                 {(user.role === 'admin' || user.role === 'supervisor') && (
                                     <li className="nav-item">
-                                        <Link className={`nav-link text-white ${isActive('/admin-dashboard') ? 'active' : ''}`} to="/admin-dashboard">
-                                            <FontAwesomeIcon icon={faClipboardList} className="me-1" /> Admin Dashboard
+                                        <Link className={`nav-link px-3 py-2 rounded-md text-gray-200 hover:bg-gray-700 transition duration-200 ${isActive('/admin-dashboard') ? 'bg-gray-700 text-white' : ''}`} to="/admin-dashboard"> {/* Dark theme nav link */}
+                                            <FontAwesomeIcon icon={faClipboardList} className="mr-2" /> Admin Dashboard
                                         </Link>
                                     </li>
                                 )}
-                                <li className="nav-item d-flex align-items-center me-lg-2">
-                                    <FontAwesomeIcon icon={faUserCircle} className="me-1 text-white" />
-                                    <span className="navbar-text text-white">
+                                <li className="nav-item flex items-center px-3 py-2 text-gray-200"> {/* Dark theme text */}
+                                    <FontAwesomeIcon icon={faUserCircle} className="mr-2 text-blue-400" /> {/* Adjusted icon color */}
+                                    <span className="font-semibold">
                                         {user.username || user.email}
                                     </span>
                                 </li>
-                                <li className="nav-item ms-lg-1">
-                                    <button className="btn btn-outline-light" onClick={handleLogout}>
-                                        <FontAwesomeIcon icon={faSignOutAlt} className="me-2" /> Logout
+                                <li className="nav-item">
+                                    <button className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition duration-200 w-full lg:w-auto" onClick={handleLogout}> {/* Dark theme logout button */}
+                                        <FontAwesomeIcon icon={faSignOutAlt} className="mr-2" /> Logout
                                     </button>
                                 </li>
                             </>
                         ) : (
                             <>
                                 <li className="nav-item">
-                                    <Link className={`btn btn-outline-light ${isActive('/login') ? 'active-btn' : ''}`} to="/login">
-                                        <FontAwesomeIcon icon={faSignInAlt} className="me-2" /> Login
+                                    <Link className={`px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition duration-200 ${isActive('/login') ? 'bg-blue-700' : ''}`} to="/login"> {/* Dark theme button link */}
+                                        <FontAwesomeIcon icon={faSignInAlt} className="mr-2" /> Login
                                     </Link>
                                 </li>
-                                <li className="nav-item ms-lg-2">
-                                    <Link className={`btn btn-success ${isActive('/register') ? 'active-btn' : ''}`} to="/register">
-                                        <FontAwesomeIcon icon={faUserPlus} className="me-1" /> Register
+                                <li className="nav-item lg:ml-2 mt-2 lg:mt-0"> {/* Added margin for spacing */}
+                                    <Link className={`px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition duration-200 ${isActive('/register') ? 'bg-green-700' : ''}`} to="/register"> {/* Dark theme button link */}
+                                        <FontAwesomeIcon icon={faUserPlus} className="mr-2" /> Register
                                     </Link>
                                 </li>
                             </>
