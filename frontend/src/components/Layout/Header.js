@@ -5,26 +5,23 @@ import { UserContext } from '../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBookOpenReader, faUserPlus, faSignInAlt, faSignOutAlt, faUpload,
-    faTachometerAlt, faSearch, faClipboardList, faUserCircle, faTimesCircle // Added faTimesCircle
+    faTachometerAlt, faSearch, faClipboardList, faUserCircle, faTimesCircle
 } from '@fortawesome/free-solid-svg-icons';
 
 const Header = () => {
-    const { user, logout } = useContext(UserContext);
+    // CRITICAL FIX: Destructure logoutUser instead of logout
+    const { user, logoutUser } = useContext(UserContext);
     const navigate = useNavigate();
-    const location = useLocation(); // Get current location to determine active link
+    const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Refs for detecting clicks outside the navbar collapse
     const navbarCollapseRef = useRef(null);
     const navbarTogglerRef = useRef(null);
 
-    // Effect to handle clicks outside the collapsed navbar
     useEffect(() => {
         const handleClickOutside = (event) => {
-            // Check if the navbar collapse is currently open (has the 'show' class)
             const isNavbarOpen = navbarCollapseRef.current && navbarCollapseRef.current.classList.contains('show');
 
-            // If the navbar is open AND the click is outside the navbar collapse AND outside the toggler button itself
             if (
                 isNavbarOpen &&
                 navbarCollapseRef.current &&
@@ -32,18 +29,14 @@ const Header = () => {
                 navbarTogglerRef.current &&
                 !navbarTogglerRef.current.contains(event.target)
             ) {
-                // Programmatically close the navbar collapse by simulating a click on the toggler.
-                // This leverages Bootstrap's built-in collapse behavior.
                 if (navbarTogglerRef.current) {
                     navbarTogglerRef.current.click();
                 }
             }
         };
 
-        // Add the event listener for clicks
         document.addEventListener('click', handleClickOutside);
 
-        // Clean up the event listener when the component unmounts
         return () => {
             document.removeEventListener('click', handleClickOutside);
         };
@@ -66,16 +59,15 @@ const Header = () => {
     };
 
     const handleLogout = () => {
-        logout();
+        // CRITICAL FIX: Call logoutUser from context
+        logoutUser();
         navigate('/login');
     };
 
-    // Helper function to determine if a link is active
     const isActive = (path) => {
         if (path === '/') {
-            return location.pathname === '/'; // Exact match for the home path
+            return location.pathname === '/';
         }
-        // For other paths, check if the current path starts with the link's path
         return location.pathname.startsWith(path);
     };
 
@@ -106,7 +98,7 @@ const Header = () => {
                     id="navbarNav"
                 >
                     <form className="d-flex my-2 my-lg-0 me-lg-3" role="search" onSubmit={handleSearchSubmit}>
-                        <div className="input-group search-input-group"> {/* Added search-input-group class */}
+                        <div className="input-group search-input-group">
                             <input
                                 className="form-control navbar-search-input"
                                 type="search"
@@ -115,7 +107,7 @@ const Header = () => {
                                 value={searchQuery}
                                 onChange={handleSearchChange}
                             />
-                            {searchQuery && ( // Conditionally render clear button
+                            {searchQuery && (
                                 <button
                                     type="button"
                                     className="btn clear-search-btn"
