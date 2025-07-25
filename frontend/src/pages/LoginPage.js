@@ -1,10 +1,12 @@
+// frontend/src/pages/LoginPage.js
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faEnvelope, faLock, faSignInAlt } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar';
+// Snackbar is now rendered by UserContext, no need to import/render here
+// import Snackbar from '../components/Common/Snackbar';
 
 const LoginPage = () => {
     const [formData, setFormData] = useState({
@@ -13,86 +15,89 @@ const LoginPage = () => {
     });
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const { login } = useContext(UserContext);
+    // CRITICAL FIX: Destructure loginUser and showSnackbar from UserContext
+    const { loginUser, showSnackbar } = useContext(UserContext);
 
-    const [snackbar, setSnackbar] = useState({
-        show: false,
-        message: '',
-        type: 'info',
-    });
-
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, show: false });
-    };
+    // Local snackbar state and handleCloseSnackbar are no longer needed here
+    // as UserContext manages the global Snackbar.
+    // const [snackbar, setSnackbar] = useState({
+    //     show: false,
+    //     message: '',
+    //     type: 'info',
+    // });
+    // const handleCloseSnackbar = () => {
+    //     setSnackbar({ ...snackbar, show: false });
+    // };
 
     const { email, password } = formData;
 
     const onChange = e => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (error) setError('');
-        if (snackbar.show) setSnackbar({ ...snackbar, show: false });
+        // No need to hide local snackbar anymore, it's global
+        // if (snackbar.show) setSnackbar({ ...snackbar, show: false });
     };
 
     const onSubmit = async e => {
         e.preventDefault();
         setError('');
-        setSnackbar({ ...snackbar, show: false });
+        // No need to hide local snackbar anymore, it's global
+        // setSnackbar({ ...snackbar, show: false });
 
         try {
             // UPDATED: Use the live Render backend URL
-            // IMPORTANT: Replace 'YOUR_RENDER_BACKEND_URL' with your actual deployed backend URL from Render.com
             const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/auth/login', {
                 email,
                 password
             });
 
-            const { token } = res.data;
+            // CRITICAL FIX: Call loginUser with the user data and token from the response
+            // The res.data from backend login should contain both token and user object
+            // UserContext's loginUser will handle setting token, user, and showing snackbar
+            await loginUser(res.data.user, res.data.token);
 
-            await login({ token });
+            // The snackbar is now shown by loginUser in UserContext.
+            // No need for local snackbar setting here:
+            // setSnackbar({
+            //     show: true,
+            //     message: 'Login successful! Welcome back.',
+            //     type: 'success',
+            // });
 
-            setSnackbar({
-                show: true,
-                message: 'Login successful! Welcome back.',
-                type: 'success',
-            });
+            // The user object received from the login response already contains the role
+            const userRole = res.data.user.role;
 
-            const checkUserRes = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth', {
-                headers: { 'x-auth-token': token }
-            });
-            const latestUserData = checkUserRes.data;
-
+            // Use setTimeout to allow snackbar to show before navigation
+            // Using a fixed duration or getting it from context if needed
             setTimeout(() => {
-                if (latestUserData.role === 'admin' || latestUserData.role === 'supervisor') {
+                if (userRole === 'admin' || userRole === 'supervisor') {
                     navigate('/admin-dashboard');
                 } else {
                     navigate('/dashboard');
                 }
-            }, snackbar.duration || 3000);
-
+            }, 1000); // Short delay to see snackbar, adjust as needed
 
         } catch (err) {
             console.error('Login failed:', err.response ? err.response.data : err.message);
-            setSnackbar({
-                show: true,
-                message: err.response && err.response.data && err.response.data.errors
-                    ? err.response.data.errors[0].msg
-                    : 'Login failed. Please check your credentials.',
-                type: 'error',
-            });
-            setError(err.response && err.response.data && err.response.data.errors
+            const errorMessage = err.response && err.response.data && err.response.data.errors
                 ? err.response.data.errors[0].msg
-                : 'Login failed. Please check your credentials.');
+                : 'Login failed. Please check your credentials.';
+
+            setError(errorMessage);
+            // Use showSnackbar from context for error messages
+            showSnackbar(errorMessage, 'error');
         }
     };
 
     return (
         <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
-            <Snackbar
+            {/* Snackbar is now rendered globally by UserProvider, remove local render */}
+            {/* <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}
                 show={snackbar.show}
                 onClose={handleCloseSnackbar}
-            />
+            /> */}
 
             <div className="card p-4 shadow-lg" style={{ maxWidth: '400px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
                 <h2 className="text-center mb-4 text-dark">Welcome Back!</h2>
