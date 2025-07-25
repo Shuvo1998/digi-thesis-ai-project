@@ -7,7 +7,7 @@ import {
     faCheckCircle, faPenFancy, faTasks // Specific icons for features
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
-import axios from 'axios';
+import axios from 'axios'; // Using global axios instance as per your code
 import { UserContext } from '../context/UserContext';
 import Snackbar from '../components/Common/Snackbar';
 import ThesisCard from '../components/Thesis/ThesisCard';
@@ -23,9 +23,15 @@ const HomePage = () => {
         type: 'info',
     });
 
+    // Initialize publicTheses as an empty array - this is crucial
     const [publicTheses, setPublicTheses] = useState([]);
     const [loadingPublicTheses, setLoadingPublicTheses] = useState(true);
     const [publicThesesError, setPublicThesesError] = useState('');
+
+    // Helper function to show snackbar messages
+    const showSnackbar = (message, type = 'info', duration = 3000) => {
+        setSnackbar({ show: true, message, type, duration });
+    };
 
     const handleCloseSnackbar = () => {
         setSnackbar({ ...snackbar, show: false });
@@ -33,11 +39,7 @@ const HomePage = () => {
 
     const handleUploadClick = () => {
         if (!user) {
-            setSnackbar({
-                show: true,
-                message: 'Please log in to upload your thesis.',
-                type: 'error',
-            });
+            showSnackbar('Please log in to upload your thesis.', 'error');
             setTimeout(() => {
                 navigate('/login');
             }, snackbar.duration || 3000);
@@ -47,29 +49,34 @@ const HomePage = () => {
     };
 
     const handleDownloadPublicThesis = (filePath, fileName) => {
-        // Backend URL is now hardcoded
+        // Backend URL is now hardcoded as per your existing code
         const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
-        setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
+        showSnackbar(`Downloading ${fileName}...`, 'info');
     };
 
     const fetchPublicTheses = async () => {
         try {
             setLoadingPublicTheses(true);
             setPublicThesesError('');
-            // Backend URL is now hardcoded
+            // Backend URL is now hardcoded as per your existing code
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/public');
-            // CORRECTED: Access the 'theses' array from the response data
-            setPublicTheses(res.data.theses);
+
+            // CRITICAL FIX: Ensure res.data.theses is an array before setting state
+            if (Array.isArray(res.data.theses)) {
+                setPublicTheses(res.data.theses);
+            } else {
+                // Fallback to empty array if unexpected data format
+                console.warn("API response 'theses' is not an array:", res.data.theses);
+                setPublicTheses([]);
+                showSnackbar('Received unexpected data format for public theses.', 'warning');
+            }
             setLoadingPublicTheses(false);
         } catch (err) {
             console.error('Failed to fetch public theses:', err.response ? err.response.data : err.message);
             setPublicThesesError('Failed to load public submissions. Please try again.');
-            setSnackbar({
-                show: true,
-                message: 'Failed to load public submissions.',
-                type: 'error',
-            });
+            setPublicTheses([]); // CRITICAL FIX: Set to empty array on error
+            showSnackbar('Failed to load public submissions.', 'error');
             setLoadingPublicTheses(false);
         }
     };
@@ -159,7 +166,7 @@ const HomePage = () => {
                 onClose={handleCloseSnackbar}
             />
 
-            <section className="hero-section mb-5">
+            <section className="hero-section mb-5" style={{ position: 'relative', overflow: 'hidden' }}> {/* Added relative positioning and overflow hidden */}
                 <motion.div
                     className="animated-blob"
                     variants={floatingElementVariants}
@@ -280,21 +287,24 @@ const HomePage = () => {
                     </div>
                 ) : publicThesesError ? (
                     <div className="alert alert-danger text-center">{publicThesesError}</div>
-                ) : publicTheses.length === 0 ? (
-                    <div className="text-center text-muted">
-                        <p className="lead">No approved theses to display yet.</p>
-                    </div>
                 ) : (
-                    <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 px-3">
-                        {publicTheses.map((thesis) => (
-                            <div className="col" key={thesis._id}>
-                                <ThesisCard
-                                    thesis={thesis}
-                                    onDownload={handleDownloadPublicThesis}
-                                />
-                            </div>
-                        ))}
-                    </div>
+                    // CRITICAL FIX: Ensure publicTheses is an array before checking length
+                    publicTheses && publicTheses.length === 0 ? (
+                        <div className="text-center text-muted">
+                            <p className="lead">No approved theses to display yet.</p>
+                        </div>
+                    ) : (
+                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 px-3">
+                            {publicTheses.map((thesis) => (
+                                <div className="col" key={thesis._id}>
+                                    <ThesisCard
+                                        thesis={thesis}
+                                        onDownload={handleDownloadPublicThesis}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    )
                 )}
             </section>
 
