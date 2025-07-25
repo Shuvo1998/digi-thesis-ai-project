@@ -1,51 +1,49 @@
 // frontend/src/pages/AdminDashboardPage.js
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserContext } from '../context/UserContext';
-import axios from 'axios'; // Ensure this is the correct axios instance
+import axios from 'axios';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSpinner, faCheckCircle, faTimesCircle, faSearch, faUserCog } from '@fortawesome/free-solid-svg-icons';
+import {
+    faSpinner,
+    faUserCog,
+    faBookOpen
+} from '@fortawesome/free-solid-svg-icons';
 import ThesisCard from '../components/Thesis/ThesisCard';
-import Snackbar from '../components/Common/Snackbar'; // Assuming Snackbar is still needed locally for now
+// Snackbar is now rendered globally by UserContext, no need to import/render here
+// import Snackbar from '../components/Common/Snackbar';
 
 const AdminDashboardPage = () => {
     const navigate = useNavigate();
-    const { user, loading: userLoading, showSnackbar } = useContext(UserContext); // Get showSnackbar from context
+    // Destructure user, userLoading, and showSnackbar from UserContext
+    const { user, loading: userLoading, showSnackbar } = useContext(UserContext);
 
+    // State for pending theses
     const [pendingTheses, setPendingTheses] = useState([]);
     const [loadingTheses, setLoadingTheses] = useState(true);
-    const [error, setError] = useState('');
-    const [showUserManagement, setShowUserManagement] = useState(false); // State to toggle user management view
+    const [error, setError] = useState(''); // For pending theses section errors
 
-    // User Management states
+    // State to toggle between pending theses and user management views
+    const [showUserManagement, setShowUserManagement] = useState(false);
+
+    // States for user management
     const [users, setUsers] = useState([]);
     const [loadingUsers, setLoadingUsers] = useState(true);
-    const [userManagementError, setUserManagementError] = useState('');
+    const [userManagementError, setUserManagementError] = useState(''); // For user management section errors
     const [userPage, setUserPage] = useState(1);
     const [userTotalPages, setUserTotalPages] = useState(1);
 
-    // Effect to redirect if user is not authorized or not logged in
-    useEffect(() => {
-        if (!userLoading) { // Wait until user context has finished loading
-            if (!user) {
-                showSnackbar('Please log in to access the admin dashboard.', 'error');
-                navigate('/login');
-            } else if (user.role !== 'admin' && user.role !== 'supervisor') {
-                showSnackbar('Access Denied. You do not have the required role.', 'error');
-                navigate('/dashboard'); // Redirect to regular dashboard or home
-            }
-        }
-    }, [user, userLoading, navigate, showSnackbar]);
+    // --- Fetching Functions (Wrapped in useCallback) ---
+    // These functions are memoized so they don't cause useEffect to re-run unnecessarily.
+    // Their dependencies are explicitly listed.
 
-    // Function to fetch pending theses
-    const fetchPendingTheses = async () => {
+    const fetchPendingTheses = useCallback(async () => {
         setLoadingTheses(true);
-        setError('');
+        setError(''); // Clear previous error
         try {
-            // Ensure token is set before making this call.
-            // UserContext's useEffect should handle axios.defaults.headers.common['x-auth-token']
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/pending');
-            setPendingTheses(res.data.theses || []); // Defensive check for array
+            // Ensure res.data.theses is an array
+            setPendingTheses(Array.isArray(res.data.theses) ? res.data.theses : []);
             showSnackbar('Pending theses loaded successfully.', 'success');
         } catch (err) {
             console.error('Failed to fetch pending theses:', err.response ? err.response.data : err.message);
@@ -55,15 +53,15 @@ const AdminDashboardPage = () => {
         } finally {
             setLoadingTheses(false);
         }
-    };
+    }, [showSnackbar]); // showSnackbar is a dependency because it's used inside this function
 
-    // Function to fetch all users (for admin/supervisor)
-    const fetchUsers = async (page = 1) => {
+    const fetchUsers = useCallback(async (page = 1) => {
         setLoadingUsers(true);
-        setUserManagementError('');
+        setUserManagementError(''); // Clear previous error
         try {
             const res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/users/all?page=${page}&limit=10`);
-            setUsers(res.data.users || []); // Defensive check for array
+            // Ensure res.data.users is an array
+            setUsers(Array.isArray(res.data.users) ? res.data.users : []);
             setUserPage(res.data.currentPage || 1);
             setUserTotalPages(res.data.totalPages || 1);
             showSnackbar('Users loaded successfully.', 'success');
@@ -75,71 +73,97 @@ const AdminDashboardPage = () => {
         } finally {
             setLoadingUsers(false);
         }
-    };
+    }, [showSnackbar]); // showSnackbar is a dependency
 
-    // Effect to fetch data only when user is loaded and authorized
-    useEffect(() => {
-        if (!userLoading && user && (user.role === 'admin' || user.role === 'supervisor')) {
-            fetchPendingTheses();
-            fetchUsers(userPage); // Fetch users when authorized
-        }
-    }, [user, userLoading, userPage]); // Depend on user and userLoading
+    // --- Event Handlers (Wrapped in useCallback) ---
+    // These handlers are also memoized as they are passed as props or used in effects.
 
-    const handleApprove = async (id) => {
+    const handleApprove = useCallback(async (id) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/approve/${id}`);
             showSnackbar('Thesis approved!', 'success');
-            fetchPendingTheses(); // Refresh the list
+            fetchPendingTheses(); // Call the memoized fetch function
         } catch (err) {
             console.error('Approval failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to approve thesis.', 'error');
         }
-    };
+    }, [showSnackbar, fetchPendingTheses]); // Dependencies: showSnackbar and fetchPendingTheses
 
-    const handleReject = async (id) => {
+    const handleReject = useCallback(async (id) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/reject/${id}`);
             showSnackbar('Thesis rejected!', 'info');
-            fetchPendingTheses(); // Refresh the list
+            fetchPendingTheses(); // Call the memoized fetch function
         } catch (err) {
             console.error('Rejection failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to reject thesis.', 'error');
         }
-    };
+    }, [showSnackbar, fetchPendingTheses]); // Dependencies
 
-    const handlePlagiarismCheck = async (id) => {
+    const handlePlagiarismCheck = useCallback(async (id) => {
         try {
             const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${id}`);
             showSnackbar(res.data.msg, 'success');
-            fetchPendingTheses(); // Refresh to show updated result
+            fetchPendingTheses(); // Call the memoized fetch function
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to run plagiarism check.', 'error');
         }
-    };
+    }, [showSnackbar, fetchPendingTheses]); // Dependencies
 
-    const handleGrammarCheck = async (id) => {
+    const handleGrammarCheck = useCallback(async (id) => {
         try {
             const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${id}`);
             showSnackbar(res.data.msg, 'success');
-            fetchPendingTheses(); // Refresh to show updated result
+            fetchPendingTheses(); // Call the memoized fetch function
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to run grammar check.', 'error');
         }
-    };
+    }, [showSnackbar, fetchPendingTheses]); // Dependencies
 
-    const handleUserRoleChange = async (userId, newRole) => {
+    const handleUserRoleChange = useCallback(async (userId, newRole) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/users/role/${userId}`, { role: newRole });
             showSnackbar(`User role updated to ${newRole}`, 'success');
-            fetchUsers(userPage); // Refresh user list
+            fetchUsers(userPage); // Call the memoized fetch function, userPage is a dependency
         } catch (err) {
             console.error('Failed to update user role:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to update user role.', 'error');
         }
-    };
+    }, [showSnackbar, fetchUsers, userPage]); // Dependencies: showSnackbar, fetchUsers, userPage
 
+    // --- Effects ---
+
+    // Effect for redirection based on user authentication and authorization
+    useEffect(() => {
+        if (!userLoading) { // Only run once user loading is complete
+            if (!user) {
+                showSnackbar('Please log in to access the admin dashboard.', 'error');
+                navigate('/login');
+            } else if (user.role !== 'admin' && user.role !== 'supervisor') {
+                showSnackbar('Access Denied. You do not have the required role.', 'error');
+                navigate('/dashboard'); // Redirect to regular dashboard or home
+            }
+        }
+    }, [user, userLoading, navigate, showSnackbar]); // Dependencies
+
+    // Effect to fetch initial data (pending theses or users) when authorized
+    // This effect depends on the user object, userLoading status, and the memoized fetch functions.
+    useEffect(() => {
+        if (!userLoading && user && (user.role === 'admin' || user.role === 'supervisor')) {
+            // Fetch data based on which view is active
+            if (showUserManagement) {
+                fetchUsers(userPage);
+            } else {
+                fetchPendingTheses();
+            }
+        }
+    }, [user, userLoading, userPage, showUserManagement, fetchPendingTheses, fetchUsers]); // All dependencies are listed
+
+    // --- Render Logic ---
+
+    // Show loading spinner while user data is being fetched initially
     if (userLoading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 font-inter">
@@ -149,9 +173,8 @@ const AdminDashboardPage = () => {
         );
     }
 
-    // Only render dashboard content if user is authorized
+    // If user is not authorized after loading, return null (redirection handled by useEffect)
     if (!user || (user.role !== 'admin' && user.role !== 'supervisor')) {
-        // The useEffect above will handle redirection, so this state should be brief
         return null;
     }
 
@@ -294,13 +317,6 @@ const AdminDashboardPage = () => {
                     </section>
                 )}
             </div>
-            {/* Snackbar is now rendered globally by UserProvider, no need for local render */}
-            {/* <Snackbar
-                message={snackbar.message}
-                type={snackbar.type}
-                show={snackbar.show}
-                onClose={handleCloseSnackbar}
-            /> */}
         </div>
     );
 };
