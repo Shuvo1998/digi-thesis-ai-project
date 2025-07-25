@@ -1,57 +1,51 @@
-// frontend/src/context/UserContext.js
 import React, { createContext, useState, useEffect, useCallback } from 'react';
-import setAuthToken from '../utils/setAuthToken';
-import { jwtDecode } from 'jwt-decode'; // CORRECTED: Use named import for jwtDecode
-import axios from 'axios';
+import api from '../utils/api'; // use custom api instance
+import { jwtDecode } from 'jwt-decode';
 
 export const UserContext = createContext();
 
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
+    const [token, setToken] = useState(localStorage.getItem('token'));
     const [loading, setLoading] = useState(true);
 
     const logout = useCallback(() => {
         localStorage.removeItem('token');
-        setAuthToken(null);
+        setToken(null);
         setUser(null);
-        console.log('User logged out. User state:', null);
+        console.log('User logged out.');
     }, []);
 
     const loadUser = useCallback(async () => {
-        const token = localStorage.getItem('token');
         if (token) {
-            setAuthToken(token);
             try {
                 const decoded = jwtDecode(token);
                 if (decoded.exp * 1000 < Date.now()) {
-                    console.log('Token expired. Logging out.');
+                    console.log('Token expired.');
                     logout();
                     return;
                 }
 
-                // UPDATED: Use the live Render backend URL
-                const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth');
-                const userDataFromBackend = res.data;
+                const res = await api.get('/auth');
+                const data = res.data;
 
-                const newUserState = {
-                    id: userDataFromBackend._id,
-                    username: userDataFromBackend.username,
-                    email: userDataFromBackend.email,
-                    role: userDataFromBackend.role || 'user',
-                    token: token
-                };
-                setUser(newUserState);
-                console.log('User loaded from token and backend. User state:', newUserState);
+                setUser({
+                    id: data._id,
+                    username: data.username,
+                    email: data.email,
+                    role: data.role || 'user',
+                });
+
+                console.log('User loaded:', data);
             } catch (err) {
-                console.error('Failed to decode token or fetch user data:', err);
+                console.error('Load user failed:', err);
                 logout();
             }
         } else {
             setUser(null);
-            console.log('No token found. User state:', null);
         }
         setLoading(false);
-    }, [logout]);
+    }, [token, logout]);
 
     useEffect(() => {
         loadUser();
@@ -59,30 +53,12 @@ export const UserProvider = ({ children }) => {
 
     const login = useCallback(async ({ token }) => {
         localStorage.setItem('token', token);
-        setAuthToken(token);
-
-        try {
-            // UPDATED: Use the live Render backend URL
-            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/auth');
-            const userDataFromBackend = res.data;
-
-            const newUserState = {
-                id: userDataFromBackend._id,
-                username: userDataFromBackend.username,
-                email: userDataFromBackend.email,
-                role: userDataFromBackend.role || 'user',
-                token: token
-            };
-            setUser(newUserState);
-            console.log('User logged in. User state:', newUserState);
-        } catch (err) {
-            console.error('Failed to fetch user data after login:', err);
-            logout();
-        }
-    }, [logout]);
+        setToken(token);
+        await loadUser();
+    }, [loadUser]);
 
     return (
-        <UserContext.Provider value={{ user, loading, login, logout }}>
+        <UserContext.Provider value={{ user, token, loading, login, logout }}>
             {children}
         </UserContext.Provider>
     );

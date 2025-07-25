@@ -1,4 +1,3 @@
-// backend/routes/api/users.js
 const express = require('express');
 const router = express.Router(); // THIS LINE IS CRITICAL - MUST BE express.Router()
 const { check, validationResult } = require('express-validator');
@@ -153,8 +152,12 @@ router.put(
             userToUpdate.role = role;
             await userToUpdate.save();
 
+            // Convert to plain object and remove password before sending
+            const userObj = userToUpdate.toObject();
+            delete userObj.password;
+
             // Return the updated user (without password)
-            res.json({ msg: `User role updated to ${role}`, user: userToUpdate.select('-password') });
+            res.json({ msg: `User role updated to ${role}`, user: userObj });
 
         } catch (err) {
             console.error(err.message);
@@ -165,6 +168,5 @@ router.put(
         }
     }
 );
-
 
 module.exports = router;
