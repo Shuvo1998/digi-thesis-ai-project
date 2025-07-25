@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const ThesisSchema = new mongoose.Schema({
     user: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'user',
+        ref: 'User', // <--- CHANGED FROM 'user' TO 'User' (uppercase U)
         required: true
     },
     title: {
@@ -48,10 +48,9 @@ const ThesisSchema = new mongoose.Schema({
         type: String,
         default: 'Not checked'
     },
-    // NEW FIELDS ADDED BELOW
     authorName: {
         type: String,
-        required: true // Making author name required
+        required: true
     },
     department: {
         type: String,
@@ -63,7 +62,7 @@ const ThesisSchema = new mongoose.Schema({
     },
     isPublic: {
         type: Boolean,
-        default: true // Default to true for now, to keep existing public display working
+        default: true
     }
 });
 
