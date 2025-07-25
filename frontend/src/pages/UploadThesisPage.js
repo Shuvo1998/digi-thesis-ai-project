@@ -1,263 +1,392 @@
 // frontend/src/pages/UploadThesisPage.js
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useRef, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFileUpload, faBook, faPencilAlt, faTags, faSpinner, faUser, faBuilding, faCalendarAlt, faGlobe } from '@fortawesome/free-solid-svg-icons'; // Added new icons
+import { motion } from 'framer-motion';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUpload, faFilePdf, faSpinner, faBook } from '@fortawesome/free-solid-svg-icons';
+import Snackbar from '../components/Common/Snackbar';
 
 const UploadThesisPage = () => {
-    const navigate = useNavigate();
-    const { user, loading: userLoading, showSnackbar } = useContext(UserContext);
-
-    const [formData, setFormData] = useState({
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [thesisData, setThesisData] = useState({
         title: '',
         abstract: '',
-        keywords: '', // Comma-separated string
+        keywords: '',
+        // NEW STATES FOR NEW FIELDS
         authorName: '',
         department: '',
         submissionYear: '',
-        isPublic: true, // Default to public
-        thesisFile: null,
+        isPublic: true // Default to public
     });
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [isUploading, setIsUploading] = useState(false);
 
-    const { title, abstract, keywords, authorName, department, submissionYear, isPublic, thesisFile } = formData;
+    const fileInputRef = useRef(null);
+    const navigate = useNavigate();
+    const { user, loading: userLoading } = useContext(UserContext);
 
-    // Redirect if user is not logged in
-    useEffect(() => {
-        if (!userLoading && !user) {
-            showSnackbar('Please log in to upload a thesis.', 'error');
-            navigate('/login');
-        }
-    }, [user, userLoading, navigate, showSnackbar]);
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'info',
+    });
 
-    const onChange = e => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (error) setError('');
+    const { title, abstract, keywords, authorName, department, submissionYear, isPublic } = thesisData; // Destructure new fields
+
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, show: false });
     };
 
-    const onFileChange = e => {
-        setFormData({ ...formData, thesisFile: e.target.files[0] });
-        if (error) setError('');
+    const onThesisDataChange = e => {
+        const { name, value, type, checked } = e.target;
+        setThesisData({
+            ...thesisData,
+            [name]: type === 'checkbox' ? checked : value
+        });
+        setSnackbar({ ...snackbar, show: false });
     };
 
-    const onSubmit = async e => {
+    const handleFileChange = (event) => {
+        const file = event.target.files[0];
+        setSelectedFile(file);
+        console.log('Selected file:', file ? file.name : 'No file');
+        setSnackbar({ ...snackbar, show: false });
+    };
+
+    const handleUploadSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setLoading(true);
 
-        if (!thesisFile) {
-            setError('Please select a PDF file to upload.');
-            showSnackbar('Please select a PDF file to upload.', 'error');
-            setLoading(false);
+        setSnackbar({ ...snackbar, show: false });
+
+        if (!user || !user.token) {
+            setSnackbar({
+                show: true,
+                message: 'You must be logged in to upload a thesis. Redirecting to login.',
+                type: 'error',
+            });
+            setTimeout(() => navigate('/login'), 3000);
             return;
         }
 
-        const data = new FormData();
-        data.append('title', title);
-        data.append('abstract', abstract);
-        data.append('keywords', keywords); // Send as string, backend will split
-        data.append('authorName', authorName);
-        data.append('department', department);
-        data.append('submissionYear', submissionYear);
-        data.append('isPublic', isPublic);
-        data.append('thesisFile', thesisFile);
+        if (!selectedFile) {
+            setSnackbar({
+                show: true,
+                message: 'Please select a thesis file to upload.',
+                type: 'error',
+            });
+            return;
+        }
+
+        // Client-side validation for new required fields
+        if (!title.trim() || !abstract.trim() || !authorName.trim() || !department.trim() || !submissionYear) {
+            setSnackbar({
+                show: true,
+                message: 'Thesis Title, Abstract, Author Name, Department, and Submission Year are required fields.',
+                type: 'error',
+            });
+            return;
+        }
+
+        if (isNaN(submissionYear) || submissionYear.length !== 4) {
+            setSnackbar({
+                show: true,
+                message: 'Submission Year must be a valid 4-digit number.',
+                type: 'error',
+            });
+            return;
+        }
+
+
+        setIsUploading(true);
+
+        const formDataToSend = new FormData();
+        formDataToSend.append('thesisFile', selectedFile);
+        formDataToSend.append('title', title.trim());
+        formDataToSend.append('abstract', abstract.trim());
+        formDataToSend.append('keywords', keywords.trim());
+        // APPEND NEW FIELDS TO FORMDATA
+        formDataToSend.append('authorName', authorName.trim());
+        formDataToSend.append('department', department.trim());
+        formDataToSend.append('submissionYear', submissionYear);
+        formDataToSend.append('isPublic', isPublic); // Boolean value directly
 
         try {
-            // Axios default header (x-auth-token) is set by UserContext
-            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/theses/upload', data, {
+            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/theses/upload', formDataToSend, {
                 headers: {
-                    'Content-Type': 'multipart/form-data'
+                    'Content-Type': 'multipart/form-data',
+                    'x-auth-token': user.token
                 }
             });
-            showSnackbar(res.data.msg || 'Thesis uploaded successfully!', 'success');
-            setFormData({
-                title: '', abstract: '', keywords: '', authorName: '', department: '',
-                submissionYear: '', isPublic: true, thesisFile: null,
-            }); // Clear form
-            document.getElementById('thesisFile').value = ''; // Clear file input
+
+            console.log('Thesis upload successful:', res.data);
+            setSnackbar({
+                show: true,
+                message: 'Thesis uploaded successfully!',
+                type: 'success',
+            });
+            setSelectedFile(null);
+            setThesisData({
+                title: '',
+                abstract: '',
+                keywords: '',
+                authorName: '',
+                department: '',
+                submissionYear: '',
+                isPublic: true
+            }); // Reset all fields
+
+            setTimeout(() => {
+                navigate('/dashboard');
+            }, snackbar.duration || 3000);
+
         } catch (err) {
-            console.error('Upload failed:', err.response ? err.response.data : err.message);
+            console.error('Thesis upload failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
                 ? err.response.data.msg
-                : (err.response && err.response.data && err.response.data.errors && err.response.data.errors[0] && err.response.data.errors[0].msg)
-                    ? err.response.data.errors[0].msg
-                    : 'Upload failed. Please try again.';
-            setError(errorMessage);
-            showSnackbar(errorMessage, 'error');
+                : 'Thesis upload failed. Please try again.';
+            setSnackbar({
+                show: true,
+                message: errorMessage,
+                type: 'error',
+            });
         } finally {
-            setLoading(false);
+            setIsUploading(false);
         }
     };
 
-    if (userLoading) {
-        return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-900 font-inter">
-                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-400" />
-                <p className="ml-3 text-lg text-gray-300">Loading user data...</p>
-            </div>
-        );
-    }
+    const containerVariants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                delayChildren: 0.2,
+                staggerChildren: 0.1
+            }
+        }
+    };
 
-    // If user is not authenticated after loading, display nothing (redirection handled by useEffect)
-    if (!user) {
-        return null;
-    }
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        visible: {
+            y: 0,
+            opacity: 1,
+            transition: {
+                type: "spring",
+                stiffness: 100,
+                damping: 10
+            }
+        }
+    };
+
+    const buttonVariants = {
+        hover: {
+            scale: 1.05,
+            boxShadow: "0px 0px 8px rgba(255,255,255,0.5)",
+            transition: {
+                duration: 0.3,
+                yoyo: Infinity
+            }
+        },
+        tap: { scale: 0.95 }
+    };
+
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-gray-900 font-inter p-4"> {/* Dark theme background */}
-            <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-2xl w-full"> {/* Dark theme card background */}
-                <h2 className="text-center mb-6 text-gray-100 text-3xl font-bold">
-                    <FontAwesomeIcon icon={faUpload} className="mr-3 text-blue-400" /> Upload Your Thesis
+        <div className="d-flex justify-content-center align-items-center py-5" style={{ minHeight: 'calc(100vh - 120px)' }}>
+            <Snackbar
+                message={snackbar.message}
+                type={snackbar.type}
+                show={snackbar.show}
+                onClose={handleCloseSnackbar}
+            />
+
+            <motion.div
+                className="card p-5 shadow-lg text-center"
+                style={{ maxWidth: '700px', width: '90%', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+            >
+                <h2 className="mb-4 text-dark">
+                    <FontAwesomeIcon icon={faFileUpload} className="me-2" /> Upload Your Thesis
                 </h2>
-                {error && <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
-                <form onSubmit={onSubmit}>
-                    {/* Title */}
-                    <div className="mb-4">
-                        <label htmlFor="title" className="block text-gray-300 text-sm font-bold mb-2">Title</label>
+
+                <form onSubmit={handleUploadSubmit}>
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="title" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faBook} className="me-2" /> Thesis Title
+                        </label>
                         <input
                             type="text"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                            className="form-control"
                             id="title"
                             name="title"
+                            placeholder="Enter your thesis title"
                             value={title}
-                            onChange={onChange}
-                            placeholder="e.g., A Novel Approach to AI in Education"
+                            onChange={onThesisDataChange}
                             required
+                            disabled={isUploading}
                         />
-                    </div>
+                    </motion.div>
 
-                    {/* Abstract */}
-                    <div className="mb-4">
-                        <label htmlFor="abstract" className="block text-gray-300 text-sm font-bold mb-2">Abstract</label>
-                        <textarea
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500 h-32"
-                            id="abstract"
-                            name="abstract"
-                            value={abstract}
-                            onChange={onChange}
-                            placeholder="Provide a concise summary of your thesis..."
-                            required
-                        ></textarea>
-                    </div>
-
-                    {/* Keywords */}
-                    <div className="mb-4">
-                        <label htmlFor="keywords" className="block text-gray-300 text-sm font-bold mb-2">Keywords (comma-separated)</label>
+                    {/* NEW FIELD: Author Name */}
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="authorName" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faUser} className="me-2" /> Author Name
+                        </label>
                         <input
                             type="text"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
-                            id="keywords"
-                            name="keywords"
-                            value={keywords}
-                            onChange={onChange}
-                            placeholder="e.g., AI, Education, Machine Learning"
-                            required
-                        />
-                    </div>
-
-                    {/* Author Name */}
-                    <div className="mb-4">
-                        <label htmlFor="authorName" className="block text-gray-300 text-sm font-bold mb-2">Author Name</label>
-                        <input
-                            type="text"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                            className="form-control"
                             id="authorName"
                             name="authorName"
+                            placeholder="Enter author's full name"
                             value={authorName}
-                            onChange={onChange}
-                            placeholder="e.g., John Doe"
+                            onChange={onThesisDataChange}
                             required
+                            disabled={isUploading}
                         />
-                    </div>
+                    </motion.div>
 
-                    {/* Department */}
-                    <div className="mb-4">
-                        <label htmlFor="department" className="block text-gray-300 text-sm font-bold mb-2">Department</label>
+                    {/* NEW FIELD: Department */}
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="department" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faBuilding} className="me-2" /> Department
+                        </label>
                         <input
                             type="text"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                            className="form-control"
                             id="department"
                             name="department"
+                            placeholder="e.g., Computer Science, Electrical Engineering"
                             value={department}
-                            onChange={onChange}
-                            placeholder="e.g., Computer Science"
+                            onChange={onThesisDataChange}
                             required
+                            disabled={isUploading}
                         />
-                    </div>
+                    </motion.div>
 
-                    {/* Submission Year */}
-                    <div className="mb-4">
-                        <label htmlFor="submissionYear" className="block text-gray-300 text-sm font-bold mb-2">Submission Year</label>
+                    {/* NEW FIELD: Submission Year */}
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="submissionYear" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faCalendarAlt} className="me-2" /> Submission Year
+                        </label>
                         <input
                             type="number"
-                            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                            className="form-control"
                             id="submissionYear"
                             name="submissionYear"
-                            value={submissionYear}
-                            onChange={onChange}
                             placeholder="e.g., 2023"
+                            value={submissionYear}
+                            onChange={onThesisDataChange}
                             required
+                            disabled={isUploading}
+                            min="1900" // Example min year
+                            max={new Date().getFullYear()} // Max current year
                         />
-                    </div>
+                    </motion.div>
 
-                    {/* Is Public Checkbox */}
-                    <div className="mb-4 flex items-center">
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="abstract" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faPencilAlt} className="me-2" /> Abstract
+                        </label>
+                        <textarea
+                            className="form-control"
+                            id="abstract"
+                            name="abstract"
+                            rows="5"
+                            placeholder="Provide a brief abstract of your thesis"
+                            value={abstract}
+                            onChange={onThesisDataChange}
+                            required
+                            disabled={isUploading}
+                        ></textarea>
+                    </motion.div>
+
+                    <motion.div className="mb-3 w-100 text-start" variants={itemVariants}>
+                        <label htmlFor="keywords" className="form-label text-dark d-flex align-items-center">
+                            <FontAwesomeIcon icon={faTags} className="me-2" /> Keywords (comma-separated)
+                        </label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            id="keywords"
+                            name="keywords"
+                            placeholder="e.g., AI, Machine Learning, Education"
+                            value={keywords}
+                            onChange={onThesisDataChange}
+                            disabled={isUploading}
+                        />
+                    </motion.div>
+
+                    {/* NEW FIELD: isPublic Checkbox */}
+                    <motion.div className="mb-3 form-check text-start" variants={itemVariants}>
                         <input
                             type="checkbox"
-                            className="form-checkbox h-5 w-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-blue-500"
+                            className="form-check-input"
                             id="isPublic"
                             name="isPublic"
                             checked={isPublic}
-                            onChange={(e) => setFormData({ ...formData, isPublic: e.target.checked })}
+                            onChange={onThesisDataChange}
+                            disabled={isUploading}
                         />
-                        <label htmlFor="isPublic" className="ml-2 block text-gray-300 text-sm">Make Publicly Accessible</label>
-                    </div>
-
-                    {/* Thesis File Upload */}
-                    <div className="mb-6">
-                        <label htmlFor="thesisFile" className="block text-gray-300 text-sm font-bold mb-2">
-                            <FontAwesomeIcon icon={faFilePdf} className="mr-2" />Upload PDF File
+                        <label className="form-check-label text-dark d-flex align-items-center" htmlFor="isPublic">
+                            <FontAwesomeIcon icon={faGlobe} className="me-2" /> Make Publicly Visible
                         </label>
-                        <input
-                            type="file"
-                            className="block w-full text-sm text-gray-300
-                            file:mr-4 file:py-2 file:px-4
-                            file:rounded-md file:border-0
-                            file:text-sm file:font-semibold
-                            file:bg-blue-500 file:text-white
-                            hover:file:bg-blue-600
-                            file:transition file:duration-200
-                            bg-gray-700 rounded-md cursor-pointer" // Tailwind file input styling
-                            id="thesisFile"
-                            name="thesisFile"
-                            accept=".pdf"
-                            onChange={onFileChange}
-                            required
-                        />
-                        {thesisFile && (
-                            <p className="mt-2 text-sm text-gray-400">Selected file: {thesisFile.name}</p>
-                        )}
-                    </div>
+                        <small className="form-text text-muted ms-4">
+                            If checked, your thesis will be visible to all users on the homepage.
+                        </small>
+                    </motion.div>
 
-                    <div className="flex items-center justify-center">
-                        <button
-                            type="submit"
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-200"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
-                            ) : (
-                                <FontAwesomeIcon icon={faUpload} className="mr-2" />
-                            )}
-                            {loading ? 'Uploading...' : 'Submit Thesis'}
-                        </button>
-                    </div>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileChange}
+                        style={{ display: 'none' }}
+                        accept=".pdf"
+                        disabled={isUploading}
+                    />
+
+                    <motion.div
+                        className="file-upload-area p-4 mb-4 border rounded-3 d-flex flex-column align-items-center justify-content-center"
+                        onClick={() => !isUploading && fileInputRef.current.click()}
+                        style={{ cursor: isUploading ? 'not-allowed' : 'pointer', backgroundColor: 'rgba(0,0,0,0.05)', borderColor: '#ced4da' }}
+                        variants={itemVariants}
+                        whileHover={{ scale: isUploading ? 1 : 1.01, borderColor: isUploading ? '#ced4da' : '#007bff' }}
+                        whileTap={{ scale: isUploading ? 1 : 0.99 }}
+                    >
+                        <FontAwesomeIcon icon={faFileUpload} size="3x" className="mb-3 text-secondary" />
+                        <p className="text-dark mb-1">
+                            {selectedFile ? `Selected: ${selectedFile.name}` : "Drag & drop your thesis file here, or click to browse"}
+                        </p>
+                        {selectedFile && (
+                            <small className="text-muted">{selectedFile.size ? `${(selectedFile.size / 1024 / 1024).toFixed(2)} MB` : ''}</small>
+                        )}
+                        {!selectedFile && <small className="text-muted">Only PDF files up to 50MB are allowed.</small>}
+                    </motion.div>
+
+                    <motion.button
+                        type="submit"
+                        className="btn btn-primary btn-lg w-100"
+                        variants={buttonVariants}
+                        whileHover="hover"
+                        whileTap="tap"
+                        disabled={isUploading}
+                    >
+                        {isUploading ? (
+                            <>
+                                <FontAwesomeIcon icon={faSpinner} spin className="me-2" /> Uploading...
+                            </>
+                        ) : (
+                            <>
+                                <FontAwesomeIcon icon={faFileUpload} className="me-2" /> Upload Thesis
+                            </>
+                        )}
+                    </motion.button>
                 </form>
-            </div>
+            </motion.div>
         </div>
     );
 };
