@@ -7,15 +7,14 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faSpinner,
     faUserCog,
-    faBookOpen
+    faBookOpen,
+    faSyncAlt // Added for refresh button
 } from '@fortawesome/free-solid-svg-icons';
 import ThesisCard from '../components/Thesis/ThesisCard';
 // Snackbar is now rendered globally by UserContext, no need to import/render here
-// import Snackbar from '../components/Common/Snackbar';
 
 const AdminDashboardPage = () => {
     const navigate = useNavigate();
-    // Destructure user, userLoading, and showSnackbar from UserContext
     const { user, loading: userLoading, showSnackbar } = useContext(UserContext);
 
     // State for pending theses
@@ -24,7 +23,7 @@ const AdminDashboardPage = () => {
     const [error, setError] = useState(''); // For pending theses section errors
 
     // State to toggle between pending theses and user management views
-    const [showUserManagement, setShowUserManagement] = useState(false);
+    const [showUserManagement, setShowUserManagement] = useState(false); // Default to false (Pending Theses)
 
     // States for user management
     const [users, setUsers] = useState([]);
@@ -34,132 +33,129 @@ const AdminDashboardPage = () => {
     const [userTotalPages, setUserTotalPages] = useState(1);
 
     // --- Fetching Functions (Wrapped in useCallback) ---
-    // These functions are memoized so they don't cause useEffect to re-run unnecessarily.
-    // Their dependencies are explicitly listed.
-
     const fetchPendingTheses = useCallback(async () => {
         setLoadingTheses(true);
-        setError(''); // Clear previous error
+        setError('');
         try {
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/pending');
-            // Ensure res.data.theses is an array
             setPendingTheses(Array.isArray(res.data.theses) ? res.data.theses : []);
-            showSnackbar('Pending theses loaded successfully.', 'success');
+            // showSnackbar('Pending theses loaded successfully.', 'success'); // Commented to reduce excessive notifications
         } catch (err) {
             console.error('Failed to fetch pending theses:', err.response ? err.response.data : err.message);
             setError(err.response?.data?.msg || 'Failed to load pending theses. Please try again.');
-            setPendingTheses([]); // Clear theses on error
+            setPendingTheses([]);
             showSnackbar(err.response?.data?.msg || 'Failed to load pending theses: Server Error', 'error');
         } finally {
             setLoadingTheses(false);
         }
-    }, [showSnackbar]); // showSnackbar is a dependency because it's used inside this function
+    }, [showSnackbar]);
 
     const fetchUsers = useCallback(async (page = 1) => {
         setLoadingUsers(true);
-        setUserManagementError(''); // Clear previous error
+        setUserManagementError('');
         try {
             const res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/users/all?page=${page}&limit=10`);
-            // Ensure res.data.users is an array
             setUsers(Array.isArray(res.data.users) ? res.data.users : []);
             setUserPage(res.data.currentPage || 1);
             setUserTotalPages(res.data.totalPages || 1);
-            showSnackbar('Users loaded successfully.', 'success');
+            // showSnackbar('Users loaded successfully.', 'success'); // Commented to reduce excessive notifications
         } catch (err) {
             console.error('Failed to fetch users:', err.response ? err.response.data : err.message);
             setUserManagementError(err.response?.data?.msg || 'Failed to load users. Please try again.');
-            setUsers([]); // Clear users on error
+            setUsers([]);
             showSnackbar(err.response?.data?.msg || 'Failed to load users: Server Error', 'error');
         } finally {
             setLoadingUsers(false);
         }
-    }, [showSnackbar]); // showSnackbar is a dependency
+    }, [showSnackbar]);
 
     // --- Event Handlers (Wrapped in useCallback) ---
-    // These handlers are also memoized as they are passed as props or used in effects.
-
     const handleApprove = useCallback(async (id) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/approve/${id}`);
             showSnackbar('Thesis approved!', 'success');
-            fetchPendingTheses(); // Call the memoized fetch function
+            fetchPendingTheses();
         } catch (err) {
             console.error('Approval failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to approve thesis.', 'error');
         }
-    }, [showSnackbar, fetchPendingTheses]); // Dependencies: showSnackbar and fetchPendingTheses
+    }, [showSnackbar, fetchPendingTheses]);
 
     const handleReject = useCallback(async (id) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/theses/reject/${id}`);
             showSnackbar('Thesis rejected!', 'info');
-            fetchPendingTheses(); // Call the memoized fetch function
+            fetchPendingTheses();
         } catch (err) {
             console.error('Rejection failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to reject thesis.', 'error');
         }
-    }, [showSnackbar, fetchPendingTheses]); // Dependencies
+    }, [showSnackbar, fetchPendingTheses]);
 
     const handlePlagiarismCheck = useCallback(async (id) => {
         try {
             const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${id}`);
             showSnackbar(res.data.msg, 'success');
-            fetchPendingTheses(); // Call the memoized fetch function
+            fetchPendingTheses();
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to run plagiarism check.', 'error');
         }
-    }, [showSnackbar, fetchPendingTheses]); // Dependencies
+    }, [showSnackbar, fetchPendingTheses]);
 
     const handleGrammarCheck = useCallback(async (id) => {
         try {
             const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${id}`);
             showSnackbar(res.data.msg, 'success');
-            fetchPendingTheses(); // Call the memoized fetch function
+            fetchPendingTheses();
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to run grammar check.', 'error');
         }
-    }, [showSnackbar, fetchPendingTheses]); // Dependencies
+    }, [showSnackbar, fetchPendingTheses]);
 
     const handleUserRoleChange = useCallback(async (userId, newRole) => {
         try {
             await axios.put(`https://digi-thesis-ai-project.onrender.com/api/users/role/${userId}`, { role: newRole });
             showSnackbar(`User role updated to ${newRole}`, 'success');
-            fetchUsers(userPage); // Call the memoized fetch function, userPage is a dependency
+            fetchUsers(userPage); // Refresh user list
         } catch (err) {
             console.error('Failed to update user role:', err.response ? err.response.data : err.message);
             showSnackbar(err.response?.data?.msg || 'Failed to update user role.', 'error');
         }
-    }, [showSnackbar, fetchUsers, userPage]); // Dependencies: showSnackbar, fetchUsers, userPage
+    }, [showSnackbar, fetchUsers, userPage]);
 
     // --- Effects ---
 
     // Effect for redirection based on user authentication and authorization
     useEffect(() => {
-        if (!userLoading) { // Only run once user loading is complete
+        if (!userLoading) {
             if (!user) {
                 showSnackbar('Please log in to access the admin dashboard.', 'error');
                 navigate('/login');
             } else if (user.role !== 'admin' && user.role !== 'supervisor') {
                 showSnackbar('Access Denied. You do not have the required role.', 'error');
-                navigate('/dashboard'); // Redirect to regular dashboard or home
+                navigate('/dashboard');
             }
         }
-    }, [user, userLoading, navigate, showSnackbar]); // Dependencies
+    }, [user, userLoading, navigate, showSnackbar]);
 
-    // Effect to fetch initial data (pending theses or users) when authorized
-    // This effect depends on the user object, userLoading status, and the memoized fetch functions.
+    // Effect to fetch initial data based on the active tab
     useEffect(() => {
         if (!userLoading && user && (user.role === 'admin' || user.role === 'supervisor')) {
-            // Fetch data based on which view is active
             if (showUserManagement) {
                 fetchUsers(userPage);
             } else {
                 fetchPendingTheses();
             }
         }
-    }, [user, userLoading, userPage, showUserManagement, fetchPendingTheses, fetchUsers]); // All dependencies are listed
+    }, [user, userLoading, userPage, showUserManagement, fetchPendingTheses, fetchUsers]);
+
+    // Effect to reset userPage when toggling between views
+    useEffect(() => {
+        setUserPage(1); // Always reset to page 1 when switching tabs
+    }, [showUserManagement]);
+
 
     // --- Render Logic ---
 
@@ -206,6 +202,14 @@ const AdminDashboardPage = () => {
                     // User Management Section
                     <section className="user-management-section mt-8">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Manage Users</h2>
+                        <div className="flex justify-center mb-4">
+                            <button
+                                onClick={() => fetchUsers(userPage)} // Refresh current page of users
+                                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
+                            >
+                                <FontAwesomeIcon icon={faSyncAlt} className="mr-2" /> Refresh Users
+                            </button>
+                        </div>
                         {loadingUsers ? (
                             <div className="flex justify-center items-center h-48">
                                 <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-500" />
@@ -218,7 +222,8 @@ const AdminDashboardPage = () => {
                             </div>
                         ) : users.length === 0 ? (
                             <div className="text-center text-gray-600 text-lg py-10">
-                                No users found.
+                                <p className="lead">No users found in the database (excluding yourself).</p>
+                                <p className="text-sm text-gray-500">New users will appear here after registration.</p>
                             </div>
                         ) : (
                             <>
@@ -285,6 +290,14 @@ const AdminDashboardPage = () => {
                     // Pending Theses Section
                     <section className="pending-theses-section mt-8">
                         <h2 className="text-2xl font-bold text-gray-800 mb-4 text-center">Pending Theses for Review</h2>
+                        <div className="flex justify-center mb-4">
+                            <button
+                                onClick={fetchPendingTheses} // Refresh pending theses
+                                className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
+                            >
+                                <FontAwesomeIcon icon={faSyncAlt} className="mr-2" /> Refresh Theses
+                            </button>
+                        </div>
                         {loadingTheses ? (
                             <div className="flex justify-center items-center h-48">
                                 <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-500" />
@@ -297,7 +310,8 @@ const AdminDashboardPage = () => {
                             </div>
                         ) : pendingTheses.length === 0 ? (
                             <div className="text-center text-gray-600 text-lg py-10">
-                                No pending theses found.
+                                <p className="lead">No pending theses found.</p>
+                                <p className="text-sm text-gray-500">New submissions will appear here for your review.</p>
                             </div>
                         ) : (
                             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
