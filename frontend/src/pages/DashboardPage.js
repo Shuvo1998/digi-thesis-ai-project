@@ -1,206 +1,212 @@
 // frontend/src/pages/DashboardPage.js
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react'; // Added useCallback
+import { useNavigate } from 'react-router-dom'; // Import useNavigate
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar';
+// Snackbar is now rendered globally by UserContext, no need to import/render here
+// import Snackbar from '../components/Common/Snackbar';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faBookOpen, faSpinner
+    faBookOpen, faSpinner, faEdit, faTrashAlt // Added icons for actions
 } from '@fortawesome/free-solid-svg-icons';
 import ThesisCard from '../components/Thesis/ThesisCard';
 
 const DashboardPage = () => {
-    const { user, loading: userLoading } = useContext(UserContext);
+    const { user, loading: userLoading, showSnackbar } = useContext(UserContext); // Get showSnackbar from context
+    const navigate = useNavigate(); // Initialize navigate
+
     const [theses, setTheses] = useState([]);
     const [loadingTheses, setLoadingTheses] = useState(true);
     const [error, setError] = useState('');
-    const [snackbar, setSnackbar] = useState({
-        show: false,
-        message: '',
-        type: 'info',
-    });
+    // Local snackbar state and handleCloseSnackbar are no longer needed here
+    // as UserContext manages the global Snackbar.
+    // const [snackbar, setSnackbar] = useState({ show: false, message: '', type: 'info' });
+    // const handleCloseSnackbar = () => { setSnackbar({ ...snackbar, show: false }); };
+
     const [checkingPlagiarismId, setCheckingPlagiarismId] = useState(null);
     const [checkingGrammarId, setCheckingGrammarId] = useState(null);
 
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, show: false });
-    };
-
-    const fetchTheses = async () => {
-        if (!user || !user.token) {
+    // --- Fetching Function (Wrapped in useCallback) ---
+    const fetchTheses = useCallback(async () => {
+        // Only attempt to fetch if user is loaded and authenticated
+        if (!user) {
             setLoadingTheses(false);
-            setError('User not authenticated. Please log in.');
-            setSnackbar({
-                show: true,
-                message: 'User not authenticated. Please log in.',
-                type: 'error',
-            });
+            // Error message will be handled by the useEffect below for redirection
             return;
         }
 
         try {
             setLoadingTheses(true);
             setError('');
-            // UPDATED: Use the live Render backend URL
-            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses', {
-                headers: {
-                    'x-auth-token': user.token,
-                },
-            });
-            setTheses(res.data);
-            setLoadingTheses(false);
+            // Axios default header (x-auth-token) is set by UserContext, no need to pass manually here
+            const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses');
+            setTheses(Array.isArray(res.data) ? res.data : []); // Ensure it's an array
+            // showSnackbar('Your theses loaded successfully.', 'success'); // Commented to reduce excessive notifications
         } catch (err) {
             console.error('Failed to fetch theses:', err.response ? err.response.data : err.message);
-            setError('Failed to load theses. Please try again.');
-            setSnackbar({
-                show: true,
-                message: 'Failed to load theses. Please try again.',
-                type: 'error',
-            });
+            setError(err.response?.data?.msg || 'Failed to load your theses. Please try again.');
+            setTheses([]); // Clear theses on error
+            showSnackbar(err.response?.data?.msg || 'Failed to load your theses: Server Error', 'error');
+        } finally {
             setLoadingTheses(false);
         }
-    };
+    }, [user, showSnackbar]); // user and showSnackbar are dependencies
 
+    // --- Effects ---
+
+    // Effect to handle redirection based on user authentication status
     useEffect(() => {
-        if (!userLoading && user) {
+        if (!userLoading) { // Wait until user context has finished loading
+            if (!user) {
+                showSnackbar('Please log in to view your dashboard.', 'error');
+                navigate('/login');
+            }
+        }
+    }, [user, userLoading, navigate, showSnackbar]);
+
+    // Effect to fetch theses when user is loaded and authenticated
+    useEffect(() => {
+        if (!userLoading && user) { // Only fetch if user is loaded AND exists
             fetchTheses();
-        } else if (!userLoading && !user) {
-            setError('Please log in to view your dashboard.');
-            setSnackbar({
-                show: true,
-                message: 'Please log in to view your dashboard.',
-                type: 'error',
-            });
         }
-    }, [user, userLoading]);
+    }, [user, userLoading, fetchTheses]); // fetchTheses is now a stable dependency
 
-    const handlePlagiarismCheck = async (thesisId) => {
+    // --- Action Handlers (Wrapped in useCallback) ---
+    const handlePlagiarismCheck = useCallback(async (thesisId) => {
         setCheckingPlagiarismId(thesisId);
-        setSnackbar({ show: false, message: '', type: 'info' });
-
-        if (!user || !user.token) {
-            setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
-            setCheckingPlagiarismId(null);
-            return;
-        }
+        // showSnackbar('Initiating plagiarism check...', 'info'); // Snackbar will be shown on success/error
 
         try {
-            // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`, {}, {
-                headers: {
-                    'x-auth-token': user.token,
-                },
-            });
-            setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchTheses();
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-plagiarism/${thesisId}`);
+            showSnackbar(res.data.msg, 'success');
+            fetchTheses(); // Refresh the list
         } catch (err) {
             console.error('Plagiarism check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
                 ? err.response.data.msg
                 : 'Plagiarism check failed. Please try again.';
-            setSnackbar({ show: true, message: errorMessage, type: 'error' });
+            showSnackbar(errorMessage, 'error');
         } finally {
             setCheckingPlagiarismId(null);
         }
-    };
+    }, [user, showSnackbar, fetchTheses]); // user is a dependency if you check user.token inside (though not needed with global axios header)
 
-    const handleGrammarCheck = async (thesisId) => {
+    const handleGrammarCheck = useCallback(async (thesisId) => {
         setCheckingGrammarId(thesisId);
-        setSnackbar({ show: false, message: '', type: 'info' });
-
-        if (!user || !user.token) {
-            setSnackbar({ show: true, message: 'You must be logged in to perform this action.', type: 'error' });
-            setCheckingGrammarId(null);
-            return;
-        }
+        // showSnackbar('Initiating grammar check...', 'info');
 
         try {
-            // UPDATED: Use the live Render backend URL
-            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`, {}, {
-                headers: {
-                    'x-auth-token': user.token,
-                },
-            });
-            setSnackbar({ show: true, message: res.data.msg, type: 'success' });
-            fetchTheses();
+            const res = await axios.post(`https://digi-thesis-ai-project.onrender.com/api/theses/check-grammar/${thesisId}`);
+            showSnackbar(res.data.msg, 'success');
+            fetchTheses(); // Refresh the list
         } catch (err) {
             console.error('Grammar check failed:', err.response ? err.response.data : err.message);
             const errorMessage = err.response && err.response.data && err.response.data.msg
                 ? err.response.data.msg
                 : 'Grammar check failed. Please try again.';
-            setSnackbar({ show: true, message: errorMessage, type: 'error' });
+            showSnackbar(errorMessage, 'error');
         } finally {
             setCheckingGrammarId(null);
         }
-    };
+    }, [user, showSnackbar, fetchTheses]);
 
-    const handleEdit = (thesisId) => {
+    const handleEdit = useCallback((thesisId) => {
         console.log('Edit thesis:', thesisId);
-        setSnackbar({ show: true, message: `Edit functionality for thesis ${thesisId} coming soon!`, type: 'info' });
-    };
+        showSnackbar(`Edit functionality for thesis ${thesisId} coming soon!`, 'info');
+    }, [showSnackbar]);
 
-    const handleDelete = async (thesisId) => {
+    const handleDelete = useCallback(async (thesisId) => {
+        // IMPORTANT: Replace window.confirm with a custom modal for better UX and consistency
         if (window.confirm('Are you sure you want to delete this thesis? This action cannot be undone.')) {
             try {
-                // UPDATED: Use the live Render backend URL
-                await axios.delete(`https://digi-thesis-ai-project.onrender.com/api/theses/${thesisId}`, {
-                    headers: {
-                        'x-auth-token': user.token,
-                    },
-                });
-                setSnackbar({ show: true, message: 'Thesis deleted successfully!', type: 'success' });
-                fetchTheses();
+                await axios.delete(`https://digi-thesis-ai-project.onrender.com/api/theses/${thesisId}`);
+                showSnackbar('Thesis deleted successfully!', 'success');
+                fetchTheses(); // Refresh the list
             } catch (err) {
                 console.error('Failed to delete thesis:', err.response ? err.response.data : err.message);
-                setSnackbar({ show: true, message: 'Failed to delete thesis. Please try again.', type: 'error' });
+                showSnackbar('Failed to delete thesis. Please try again.', 'error');
             }
         }
-    };
+    }, [user, showSnackbar, fetchTheses]); // user dependency if you use user.token (though not needed with global axios header)
 
-    const handleDownload = (filePath, fileName) => {
-        // UPDATED: Use the live Render backend URL
+    const handleDownload = useCallback((filePath, fileName) => {
         const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
-        setSnackbar({ show: true, message: `Downloading ${fileName}...`, type: 'info' });
-    };
+        showSnackbar(`Downloading ${fileName}...`, 'info');
+    }, [showSnackbar]);
 
+    // --- Render Logic ---
 
+    // Show loading spinner while user data is being fetched initially OR theses are loading
     if (userLoading || loadingTheses) {
         return (
-            <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
-                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary" />
-                <p className="ms-3 text-white">Loading Dashboard...</p>
+            <div className="min-h-screen flex items-center justify-center bg-gray-900 font-inter"> {/* Dark theme */}
+                <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-blue-400" /> {/* Dark theme color */}
+                <p className="ml-3 text-lg text-gray-300">Loading Dashboard...</p> {/* Dark theme color */}
+            </div>
+        );
+    }
+
+    // If user is not authenticated after loading, display a message (redirection handled by useEffect)
+    if (!user) {
+        return (
+            <div className="min-h-screen bg-gray-900 flex items-center justify-center p-4 font-inter"> {/* Dark theme */}
+                <div className="bg-gray-800 p-6 rounded-lg shadow-xl text-center"> {/* Dark theme card */}
+                    <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded relative mb-4" role="alert">
+                        <strong className="font-bold">Authentication Required:</strong>
+                        <span className="block sm:inline"> Please log in to view your dashboard.</span>
+                    </div>
+                    <button
+                        onClick={() => navigate('/login')}
+                        className="px-6 py-3 bg-blue-600 text-white rounded-md text-lg font-semibold hover:bg-blue-700 transition duration-300 shadow-lg"
+                    >
+                        Go to Login
+                    </button>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="container py-5">
-            <Snackbar
+        <div className="min-h-screen bg-gray-900 p-4 sm:p-6 lg:p-8 font-inter"> {/* Dark theme background */}
+            {/* Snackbar is now rendered globally by UserProvider, no need for local render */}
+            {/* <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}
                 show={snackbar.show}
                 onClose={handleCloseSnackbar}
-            />
+            /> */}
 
-            <h1 className="text-center mb-5 text-white">
-                <FontAwesomeIcon icon={faBookOpen} className="me-3" /> My Theses
-            </h1>
+            <div className="max-w-7xl mx-auto bg-gray-800 p-6 sm:p-8 rounded-lg shadow-xl"> {/* Dark theme card background */}
+                <h1 className="text-center mb-5 text-gray-100 text-3xl sm:text-4xl font-bold"> {/* Dark theme text color */}
+                    <FontAwesomeIcon icon={faBookOpen} className="mr-3 text-blue-400" /> My Theses {/* Adjusted icon color */}
+                </h1>
 
-            {error && <div className="alert alert-danger text-center">{error}</div>}
+                {error && (
+                    <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded relative mb-4" role="alert">
+                        <strong className="font-bold">Error!</strong>
+                        <span className="block sm:inline"> {error}</span>
+                    </div>
+                )}
 
-            {theses.length === 0 ? (
-                <div className="text-center text-white-50">
-                    <p className="lead">You haven't uploaded any theses yet.</p>
-                    <p>Click "Upload Your Thesis" on the homepage to get started!</p>
-                </div>
-            ) : (
-                <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
-                    {theses.map((thesis) => (
-                        <div className="col" key={thesis._id}>
+                {theses.length === 0 ? (
+                    <div className="text-center text-gray-300 text-lg py-10"> {/* Dark theme text color */}
+                        <p className="lead">You haven't uploaded any theses yet.</p>
+                        <p className="text-sm text-gray-400">Click "Upload Your Thesis" on the homepage to get started!</p>
+                        <button
+                            onClick={fetchTheses}
+                            className="mt-4 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition duration-200"
+                        >
+                            <FontAwesomeIcon icon={faSpinner} className="mr-2" /> Refresh My Theses
+                        </button>
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> {/* Tailwind grid classes */}
+                        {theses.map((thesis) => (
                             <ThesisCard
+                                key={thesis._id}
                                 thesis={thesis}
-                                isOwnerOrAdmin={true}
+                                isOwnerOrAdmin={true} // Assuming user is owner here
                                 checkingPlagiarismId={checkingPlagiarismId}
                                 checkingGrammarId={checkingGrammarId}
                                 onPlagiarismCheck={handlePlagiarismCheck}
@@ -208,11 +214,12 @@ const DashboardPage = () => {
                                 onDownload={handleDownload}
                                 onEdit={handleEdit}
                                 onDelete={handleDelete}
+                            // Ensure ThesisCard itself adapts to dark theme
                             />
-                        </div>
-                    ))}
-                </div>
-            )}
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
