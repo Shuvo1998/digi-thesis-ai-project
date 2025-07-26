@@ -1,7 +1,7 @@
 // frontend/src/App.js
-import React from 'react'; // Removed useContext and useEffect
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { UserProvider } from './context/UserContext'; // Removed UserContext import
+import { UserProvider } from './context/UserContext';
 import Header from './components/Layout/Header';
 import Footer from './components/Layout/Footer';
 import HomePage from './pages/HomePage';
@@ -11,20 +11,9 @@ import DashboardPage from './pages/DashboardPage';
 import UploadThesisPage from './pages/UploadThesisPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ViewThesisPage from './pages/ViewThesisPage';
-import SearchResultsPage from './pages/SearchResultsPage'; // Assuming this page exists
+import SearchResultsPage from './pages/SearchResultsPage'; // Re-added SearchResultsPage import
 
-// Main App component that wraps the routing and context
 const AppContent = () => {
-  // Removed useEffect for dark mode class
-  // const { isDarkMode } = useContext(UserContext);
-  // useEffect(() => {
-  //     if (isDarkMode) {
-  //         document.documentElement.classList.add('dark');
-  //     } else {
-  //         document.documentElement.classList.remove('dark');
-  //     }
-  // }, [isDarkMode]);
-
   return (
     <Router>
       <Header />
@@ -37,7 +26,7 @@ const AppContent = () => {
           <Route path="/upload-thesis" element={<UploadThesisPage />} />
           <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
           <Route path="/view-thesis/:id" element={<ViewThesisPage />} />
-          <Route path="/search" element={<SearchResultsPage />} />
+          <Route path="/search" element={<SearchResultsPage />} /> {/* Re-added SearchResultsPage route */}
           {/* Add other routes as needed */}
         </Routes>
       </main>
@@ -46,7 +35,6 @@ const AppContent = () => {
   );
 };
 
-// Wrapper component to provide UserContext to the entire application
 const App = () => {
   return (
     <UserProvider>
