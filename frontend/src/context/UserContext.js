@@ -1,13 +1,27 @@
 // frontend/src/context/UserContext.js
-import React, { createContext, useState, useEffect, useCallback } from 'react'; // Import useCallback
+import React, { createContext, useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import Snackbar from '../components/Common/Snackbar';
 
+// Create the UserContext
 export const UserContext = createContext();
 
+// Create the UserProvider component
 export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(true); // For initial user loading
+
+    // Dark Mode State: Initialize from localStorage or default to false (light mode)
+    const [isDarkMode, setIsDarkMode] = useState(() => {
+        try {
+            const storedTheme = localStorage.getItem('theme');
+            return storedTheme === 'dark';
+        } catch (error) {
+            console.error("Failed to read theme from localStorage:", error);
+            return false; // Default to light mode if localStorage is inaccessible
+        }
+    });
+
     const [snackbar, setSnackbar] = useState({
         show: false,
         message: '',
@@ -18,12 +32,26 @@ export const UserProvider = ({ children }) => {
     // Memoize showSnackbar to ensure stable function reference
     const showSnackbar = useCallback((message, type = 'info', duration = 3000) => {
         setSnackbar({ show: true, message, type, duration });
-    }, []); // No dependencies, as it only uses setSnackbar (from useState)
+    }, []);
 
     // Memoize handleCloseSnackbar to ensure stable function reference
     const handleCloseSnackbar = useCallback(() => {
         setSnackbar(prev => ({ ...prev, show: false }));
-    }, []); // No dependencies
+    }, []);
+
+    // Memoize toggleDarkMode to ensure stable function reference
+    const toggleDarkMode = useCallback(() => {
+        setIsDarkMode(prevMode => !prevMode);
+    }, []);
+
+    // Effect to update localStorage whenever isDarkMode changes
+    useEffect(() => {
+        try {
+            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+        } catch (error) {
+            console.error("Failed to write theme to localStorage:", error);
+        }
+    }, [isDarkMode]);
 
     const setAuthToken = (token) => {
         if (token) {
@@ -40,15 +68,16 @@ export const UserProvider = ({ children }) => {
             setAuthToken(token);
         }
         showSnackbar('Login successful!', 'success');
-    }, [showSnackbar]); // showSnackbar is a dependency
+    }, [showSnackbar]);
 
     const logoutUser = useCallback(() => {
         setUser(null);
         localStorage.removeItem('token');
         setAuthToken(null);
         showSnackbar('Logged out successfully.', 'info');
-    }, [showSnackbar]); // showSnackbar is a dependency
+    }, [showSnackbar]);
 
+    // Effect to check for existing token on initial load
     useEffect(() => {
         const loadUser = async () => {
             const token = localStorage.getItem('token');
@@ -65,23 +94,27 @@ export const UserProvider = ({ children }) => {
                     showSnackbar('Session expired or invalid. Please log in again.', 'error');
                 }
             }
-            setLoading(false);
+            setLoading(false); // Finished loading user status
         };
 
         loadUser();
     }, [showSnackbar]); // showSnackbar is a dependency here too
 
+    // Value provided by the context to its consumers
     const contextValue = {
         user,
-        loading,
+        loading, // Indicates if initial user loading is complete
         loginUser,
         logoutUser,
-        showSnackbar,
+        showSnackbar, // Provide showSnackbar function
+        isDarkMode, // Provide isDarkMode state
+        toggleDarkMode, // Provide toggleDarkMode function
     };
 
     return (
         <UserContext.Provider value={contextValue}>
             {children}
+            {/* Render the Snackbar component here, managed by UserContext's state */}
             <Snackbar
                 message={snackbar.message}
                 type={snackbar.type}
