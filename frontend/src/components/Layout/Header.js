@@ -5,12 +5,12 @@ import { UserContext } from '../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBookOpenReader, faUserPlus, faSignInAlt, faSignOutAlt, faUpload,
-    faTachometerAlt, faSearch, faClipboardList, faUserCircle, faTimesCircle
+    faTachometerAlt, faSearch, faClipboardList, faUserCircle, faTimesCircle,
+    faSun, faMoon // Import sun and moon icons for theme toggle
 } from '@fortawesome/free-solid-svg-icons';
 
 const Header = () => {
-    // CRITICAL FIX: Destructure logoutUser instead of logout
-    const { user, logoutUser } = useContext(UserContext);
+    const { user, logoutUser, isDarkMode, toggleDarkMode } = useContext(UserContext); // Destructure isDarkMode and toggleDarkMode
     const navigate = useNavigate();
     const location = useLocation();
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,7 +59,6 @@ const Header = () => {
     };
 
     const handleLogout = () => {
-        // CRITICAL FIX: Call logoutUser from context
         logoutUser();
         navigate('/login');
     };
@@ -124,6 +123,22 @@ const Header = () => {
                     </form>
 
                     <ul className="navbar-nav mb-2 mb-lg-0 align-items-lg-center">
+                        {/* Theme Toggle Button */}
+                        <li className="nav-item me-lg-2">
+                            <button
+                                onClick={toggleDarkMode}
+                                className="btn btn-outline-light d-flex align-items-center justify-content-center"
+                                aria-label={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+                                style={{ width: '40px', height: '40px', borderRadius: '50%' }} // Basic circle button
+                            >
+                                <FontAwesomeIcon
+                                    icon={isDarkMode ? faSun : faMoon}
+                                    className={isDarkMode ? 'text-yellow-400' : 'text-gray-700'} // Tailwind colors for icons
+                                    size="lg"
+                                />
+                            </button>
+                        </li>
+
                         {user ? (
                             <>
                                 <li className="nav-item">
