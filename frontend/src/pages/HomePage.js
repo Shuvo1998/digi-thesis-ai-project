@@ -25,7 +25,7 @@ const HomePage = () => {
             showSnackbar('Please log in to upload your thesis.', 'error');
             setTimeout(() => {
                 navigate('/login');
-            }, 1000);
+            }, 1000); // Short delay for snackbar visibility
         } else {
             navigate('/upload-thesis');
         }
@@ -124,7 +124,6 @@ const HomePage = () => {
     };
 
     return (
-        // Main container for the homepage content, relying on app-main-content for global background
         <div className="py-5 relative overflow-hidden">
             {/* Animated Blobs - colors adjusted for dark theme */}
             <motion.div
@@ -195,19 +194,19 @@ const HomePage = () => {
                 }}
             ></motion.div>
 
-            <div className="container relative z-10"> {/* Bootstrap container for content width */}
-                <section className="hero-section mb-5 text-center py-5"> {/* Added padding for hero */}
+            <div className="container relative z-10">
+                <section className="hero-section mb-5 text-center py-5">
                     <motion.h1
-                        className="display-4 fw-bold mb-3 text-light-custom" // Custom light text
+                        className="display-4 fw-bold mb-3 text-light-custom"
                         variants={itemVariants}
                         initial="hidden"
                         animate="visible"
                     >
-                        Build and analyze your Thesis <br /> on a <span className="text-primary-custom">Single, Collaborative Platform</span> {/* Custom accent color */}
+                        Build and analyze your Thesis <br /> on a <span className="text-primary-custom">Single, Collaborative Platform</span>
                     </motion.h1>
 
                     <motion.p
-                        className="lead mb-4 text-muted-custom" // Custom muted light text
+                        className="lead mb-4 text-muted-custom"
                         variants={itemVariants}
                         initial="hidden"
                         animate="visible"
@@ -222,7 +221,7 @@ const HomePage = () => {
                         animate="visible"
                     >
                         <motion.button
-                            className="btn btn-primary btn-lg shadow-lg" // Bootstrap button with shadow
+                            className="btn btn-primary btn-lg shadow-lg"
                             onClick={handleUploadClick}
                             variants={itemVariants}
                             whileHover="hover"
@@ -234,12 +233,13 @@ const HomePage = () => {
                     </motion.div>
                 </section>
 
-                <section className="public-submissions-section dark-card-section px-4 py-5"> {/* Custom dark card section */}
+                <section className="public-submissions-section dark-card-section px-4 py-5">
                     <h2 className="mb-4 text-light-custom text-center">
                         <FontAwesomeIcon icon={faBookOpen} className="me-3" /> Latest Approved Theses
                     </h2>
                     {loadingPublicTheses ? (
-                        <div className="d-flex justify-content-center align-items-center py-5">
+                        // Added 'd-flex justify-content-center align-items-center min-vh-50' for centering
+                        <div className="d-flex flex-column justify-content-center align-items-center py-5 min-h-250px">
                             <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary-custom" />
                             <p className="ms-3 text-muted-custom">Loading public submissions...</p>
                         </div>
@@ -253,13 +253,12 @@ const HomePage = () => {
                             <p className="lead">No approved theses to display yet.</p>
                         </div>
                     ) : (
-                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {/* Bootstrap grid */}
+                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
                             {publicTheses.map((thesis) => (
                                 <div className="col" key={thesis._id}>
                                     <ThesisCard
                                         thesis={thesis}
                                         onDownload={handleDownloadPublicThesis}
-                                    // ThesisCard itself will be updated to adapt to dark theme separately
                                     />
                                 </div>
                             ))}
@@ -267,20 +266,20 @@ const HomePage = () => {
                     )}
                 </section>
 
-                <section className="features-section dark-card-section px-4 py-5"> {/* Custom dark card section */}
+                <section className="features-section dark-card-section px-4 py-5">
                     <h2 className="mb-4 text-light-custom text-center">Key Features</h2>
                     <motion.div
-                        className="row justify-content-center g-4" // Bootstrap grid
+                        className="row justify-content-center g-4"
                         variants={containerVariants}
                         initial="hidden"
                         whileInView="visible"
                         viewport={{ once: true, amount: 0.3 }}
                     >
-                        {/* Plagiarism Check Feature Card (Clickable) */}
+                        {/* Feature Cards remain the same as previous update */}
                         <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
                             <Link to="/dashboard" className="feature-card-link">
-                                <div className="feature-card"> {/* Custom feature card class */}
-                                    <div className="feature-icon-circle blue-icon"> {/* Custom icon circle with color class */}
+                                <div className="feature-card">
+                                    <div className="feature-icon-circle blue-icon">
                                         <FontAwesomeIcon icon={faCheckCircle} size="3x" />
                                     </div>
                                     <h4 className="text-light-custom">Plagiarism Check</h4>
@@ -289,7 +288,6 @@ const HomePage = () => {
                             </Link>
                         </motion.div>
 
-                        {/* Grammar Correction Feature Card (Clickable) */}
                         <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
                             <Link to="/dashboard" className="feature-card-link">
                                 <div className="feature-card">
@@ -302,7 +300,6 @@ const HomePage = () => {
                             </Link>
                         </motion.div>
 
-                        {/* Thesis Management Feature Card (Clickable) */}
                         <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
                             <Link to="/dashboard" className="feature-card-link">
                                 <div className="feature-card">
