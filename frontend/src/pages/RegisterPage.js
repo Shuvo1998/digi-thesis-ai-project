@@ -1,10 +1,10 @@
-// frontend/src/pages/RegisterPage.js
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faUser, faEnvelope, faLock, faUserPlus, faSpinner } from '@fortawesome/free-solid-svg-icons';
+import { faUser, faEnvelope, faLock, faUserPlus } from '@fortawesome/free-solid-svg-icons';
 import axios from 'axios';
 import { UserContext } from '../context/UserContext';
+import Snackbar from '../components/Common/Snackbar';
 
 const RegisterPage = () => {
     const [formData, setFormData] = useState({
@@ -13,101 +13,114 @@ const RegisterPage = () => {
         password: '',
         password2: ''
     });
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
-    // CRITICAL FIX: Ensure showSnackbar is correctly destructured from UserContext
-    const { showSnackbar } = useContext(UserContext);
+    const { login } = useContext(UserContext);
+
+    const [snackbar, setSnackbar] = useState({
+        show: false,
+        message: '',
+        type: 'info',
+    });
+
+    const handleCloseSnackbar = () => {
+        setSnackbar({ ...snackbar, show: false });
+    };
 
     const { username, email, password, password2 } = formData;
 
     const onChange = e => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (error) setError('');
+        if (snackbar.show) setSnackbar({ ...snackbar, show: false });
     };
 
-    const onSubmit = async e => {
+    const onSubmit = async (e) => {
         e.preventDefault();
-        setError('');
-        setLoading(true);
+        setSnackbar({ ...snackbar, show: false });
 
         if (password !== password2) {
-            setError('Passwords do not match');
-            showSnackbar('Passwords do not match', 'error'); // Use showSnackbar from context
-            setLoading(false);
+            setSnackbar({
+                show: true,
+                message: "Passwords do not match!",
+                type: 'error',
+            });
             return;
         }
 
         try {
-            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/users', {
-                username, // Ensure username is being sent
+            // UPDATED: Use the live Render backend URL
+            const res = await axios.post('https://digi-thesis-ai-project.onrender.com/api/auth/register', {
+                username,
                 email,
                 password
             });
 
-            // Log the full response to see what backend sends for user
-            console.log("Registration successful:", res.data);
+            console.log('Registration successful:', res.data);
+            const { token, user: userData } = res.data;
 
-            // Backend is returning an empty user object (user: {}).
-            // This is unusual for a successful registration.
-            // Ideally, the backend should return the newly registered user's basic info.
-            // For now, we proceed with the assumption that the registration itself was successful.
+            await login({ token });
 
-            showSnackbar('Registration successful! Please log in.', 'success'); // Use showSnackbar from context
+            setSnackbar({
+                show: true,
+                message: 'Registration successful! You are now logged in.',
+                type: 'success',
+            });
             setTimeout(() => {
-                navigate('/login');
-            }, 1500);
+                navigate('/dashboard');
+            }, snackbar.duration || 3000);
 
         } catch (err) {
             console.error('Registration failed:', err.response ? err.response.data : err.message);
-            const errorMessage = err.response && err.response.data && err.response.data.errors
-                ? err.response.data.errors[0].msg // Access the error message from the array
-                : 'Registration failed. Please try again.';
-
-            setError(errorMessage);
-            showSnackbar(errorMessage, 'error'); // Use showSnackbar from context
-        } finally {
-            setLoading(false);
+            setSnackbar({
+                show: true,
+                message: err.response && err.response.data && err.response.data.errors
+                    ? err.response.data.errors[0].msg
+                    : 'Registration failed. Please try again.',
+                type: 'error',
+            });
         }
     };
 
     return (
-        <div className="min-h-screen flex justify-center items-center bg-gray-900 font-inter p-4">
-            <div className="bg-gray-800 p-6 rounded-lg shadow-xl max-w-md w-full">
-                <h2 className="text-center mb-4 text-gray-100 text-2xl font-bold">Create Your Account</h2>
-                {error && <div className="bg-red-900 border border-red-700 text-red-300 px-4 py-3 rounded relative mb-4" role="alert">{error}</div>}
+        <div className="d-flex justify-content-center align-items-center" style={{ minHeight: 'calc(100vh - 56px)' }}>
+            <Snackbar
+                message={snackbar.message}
+                type={snackbar.type}
+                show={snackbar.show}
+                onClose={handleCloseSnackbar}
+            />
+
+            <div className="card p-4 shadow-lg" style={{ maxWidth: '450px', width: '100%', backgroundColor: 'rgba(255, 255, 255, 0.9)' }}>
+                <h2 className="text-center mb-4 text-dark">
+                    <FontAwesomeIcon icon={faUserPlus} className="me-2" /> Register
+                </h2>
                 <form onSubmit={onSubmit}>
-                    <div className="mb-4">
-                        <label htmlFor="username" className="block text-gray-300 text-sm font-bold mb-2">
-                            <FontAwesomeIcon icon={faUser} className="mr-2" />Username
+                    <div className="mb-3">
+                        <label htmlFor="username" className="form-label text-primary fw-bold text-start d-flex align-items-center">
+                            <FontAwesomeIcon icon={faUser} className="me-2" /> Username
                         </label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                <FontAwesomeIcon icon={faUser} />
-                            </span>
+                        <div className="input-group">
+                            <span className="input-group-text"><FontAwesomeIcon icon={faUser} /></span>
                             <input
                                 type="text"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 pl-10 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                                className="form-control"
                                 id="username"
                                 name="username"
-                                placeholder="Your Username"
+                                placeholder="Choose a username"
                                 value={username}
                                 onChange={onChange}
                                 required
                             />
                         </div>
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="email" className="block text-gray-300 text-sm font-bold mb-2">
-                            <FontAwesomeIcon icon={faEnvelope} className="mr-2" />Email
+                    <div className="mb-3">
+                        <label htmlFor="email" className="form-label text-primary fw-bold text-start d-flex align-items-center">
+                            <FontAwesomeIcon icon={faEnvelope} className="me-2" /> University Email
                         </label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                <FontAwesomeIcon icon={faEnvelope} />
-                            </span>
+                        <div className="input-group">
+                            <span className="input-group-text"><FontAwesomeIcon icon={faEnvelope} /></span>
                             <input
                                 type="email"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 pl-10 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                                className="form-control"
                                 id="email"
                                 name="email"
                                 placeholder="name@example.com"
@@ -117,64 +130,49 @@ const RegisterPage = () => {
                             />
                         </div>
                     </div>
-                    <div className="mb-4">
-                        <label htmlFor="password" className="block text-gray-300 text-sm font-bold mb-2">
-                            <FontAwesomeIcon icon={faLock} className="mr-2" />Password
+                    <div className="mb-3">
+                        <label htmlFor="password" className="form-label text-primary fw-bold text-start d-flex align-items-center">
+                            <FontAwesomeIcon icon={faLock} className="me-2" /> Password
                         </label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                <FontAwesomeIcon icon={faLock} />
-                            </span>
+                        <div className="input-group">
+                            <span className="input-group-text"><FontAwesomeIcon icon={faLock} /></span>
                             <input
                                 type="password"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 pl-10 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                                className="form-control"
                                 id="password"
                                 name="password"
-                                placeholder="********"
+                                placeholder="Create a password"
                                 value={password}
                                 onChange={onChange}
-                                minLength="6"
                                 required
                             />
                         </div>
                     </div>
-                    <div className="mb-6">
-                        <label htmlFor="password2" className="block text-gray-300 text-sm font-bold mb-2">
-                            <FontAwesomeIcon icon={faLock} className="mr-2" />Confirm Password
+                    <div className="mb-3">
+                        <label htmlFor="password2" className="form-label text-primary fw-bold text-start d-flex align-items-center">
+                            <FontAwesomeIcon icon={faLock} className="me-2" /> Confirm Password
                         </label>
-                        <div className="relative">
-                            <span className="absolute inset-y-0 left-0 pl-3 flex items-center text-gray-400">
-                                <FontAwesomeIcon icon={faLock} />
-                            </span>
+                        <div className="input-group">
+                            <span className="input-group-text"><FontAwesomeIcon icon={faLock} /></span>
                             <input
                                 type="password"
-                                className="shadow appearance-none border rounded w-full py-2 px-3 pl-10 text-gray-100 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 focus:border-blue-500"
+                                className="form-control"
                                 id="password2"
                                 name="password2"
-                                placeholder="********"
+                                placeholder="Confirm your password"
                                 value={password2}
                                 onChange={onChange}
-                                minLength="6"
                                 required
                             />
                         </div>
                     </div>
-                    <div className="flex items-center justify-between">
-                        <button
-                            type="submit"
-                            className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline transition duration-200 w-full"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                <FontAwesomeIcon icon={faSpinner} spin className="mr-2" />
-                            ) : (
-                                <FontAwesomeIcon icon={faUserPlus} className="mr-2" />
-                            )}
-                            {loading ? 'Registering...' : 'Register'}
+                    <div className="d-grid gap-2 mb-3">
+                        <button type="submit" className="btn btn-success btn-lg">
+                            <FontAwesomeIcon icon={faUserPlus} className="me-2" /> Register Account
                         </button>
                     </div>
-                    <p className="text-center mt-4 text-gray-300">
-                        Already have an account? <Link to="/login" className="text-blue-400 hover:text-blue-300 font-bold">Login here</Link>
+                    <p className="text-center text-dark">
+                        Already have an account? <Link to="/login" className="text-primary fw-bold">Login here</Link>
                     </p>
                 </form>
             </div>
