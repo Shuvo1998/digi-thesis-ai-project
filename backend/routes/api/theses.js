@@ -6,7 +6,6 @@ const auth = require('../../middleware/auth');
 const upload = require('../../middleware/upload'); // Multer middleware for file uploads
 const Thesis = require('../../models/Thesis');
 const User = require('../../models/User'); // Assuming you might need User model for user details
-const fs = require('fs'); // File system module for cleanup
 
 // @route   POST api/theses/upload
 // @desc    Upload a new thesis
@@ -19,7 +18,7 @@ router.post(
         // Validation for text fields
         check('title', 'Thesis title is required').not().isEmpty(),
         check('abstract', 'Abstract is required').not().isEmpty(),
-        check('keywords', 'Keywords are required').not().isEmpty(), // Keywords will be split on backend
+        // NEW FIELD VALIDATION
         check('authorName', 'Author name is required').not().isEmpty(),
         check('department', 'Department is required').not().isEmpty(),
         check('submissionYear', 'Submission year is required and must be a 4-digit number')
@@ -37,6 +36,7 @@ router.post(
             // If there are validation errors, return them
             // Also, if a file was uploaded before validation failed, clean it up
             if (req.file) {
+                const fs = require('fs');
                 fs.unlink(req.file.path, (err) => {
                     if (err) console.error('Error deleting uploaded file:', err);
                 });
@@ -72,8 +72,7 @@ router.post(
                 authorName,
                 department,
                 submissionYear,
-                isPublic: isPublic !== undefined ? isPublic : true, // Default to true if not provided
-                status: 'pending' // Default status for new uploads
+                isPublic: isPublic !== undefined ? isPublic : true // Default to true if not provided
             });
 
             // Save the thesis to the database
@@ -84,6 +83,7 @@ router.post(
             console.error(err.message);
             // If an error occurs after file upload but before saving to DB, delete the file
             if (req.file) {
+                const fs = require('fs');
                 fs.unlink(req.file.path, (unlinkErr) => {
                     if (unlinkErr) console.error('Error deleting uploaded file on server error:', unlinkErr);
                 });
@@ -146,6 +146,7 @@ router.get('/pending', auth, async (req, res) => {
         }
 
         // Fetch all pending theses, populate user info
+        // Explicitly define the path and select fields for populate
         const pendingTheses = await Thesis.find({ status: 'pending' })
             .sort({ uploadDate: -1 })
             .populate({
@@ -161,7 +162,8 @@ router.get('/pending', auth, async (req, res) => {
         });
     } catch (err) {
         console.error(err.message);
-        console.error("Error fetching pending theses:", err); // Log the full error for more details
+        // Log the full error to get more details on Render logs
+        console.error("Error fetching pending theses:", err);
         res.status(500).send('Server Error');
     }
 });
@@ -181,7 +183,6 @@ router.get('/:id', auth, async (req, res) => {
         const isPublicAndApproved = thesis.isPublic && thesis.status === 'approved';
 
         // Check if the logged-in user is the owner or an admin/supervisor
-        // req.user is populated by the 'auth' middleware
         const isOwnerOrAdmin = req.user && (thesis.user._id.toString() === req.user.id || req.user.role === 'admin' || req.user.role === 'supervisor');
 
         if (!isPublicAndApproved && !isOwnerOrAdmin) {
@@ -270,7 +271,7 @@ router.post('/check-plagiarism/:id', auth, async (req, res) => {
             return res.status(401).json({ msg: 'User not authorized to perform plagiarism check on this thesis' });
         }
 
-        // Simulate plagiarism check (replace with actual AI call later)
+        // Simulate plagiarism check (replace with actual AI call)
         const simulatedResult = Math.random() < 0.5
             ? 'Plagiarism check complete: 15% similarity found. Review required.'
             : 'Plagiarism check complete: 2% similarity found. No significant issues.';
@@ -305,7 +306,7 @@ router.post('/check-grammar/:id', auth, async (req, res) => {
             return res.status(401).json({ msg: 'User not authorized to perform grammar check on this thesis' });
         }
 
-        // Simulate grammar check (replace with actual AI call later)
+        // Simulate grammar check (replace with actual AI call)
         const simulatedResult = `Grammar check complete:
 - Found 3 spelling errors (e.g., 'teh' -> 'the').
 - Found 2 grammatical issues (e.g., 'He go' -> 'He goes').
@@ -343,6 +344,7 @@ router.delete('/:id', auth, async (req, res) => {
         }
 
         // Remove the file from the server's uploads directory
+        const fs = require('fs');
         fs.unlink(thesis.filePath, async (err) => {
             if (err) {
                 console.error('Error deleting thesis file from server:', err);
@@ -408,7 +410,8 @@ router.get('/search', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        console.error("Error searching theses:", err); // Log the full error for more details
+        // Log the full error to get more details on Render logs
+        console.error("Error searching theses:", err);
         res.status(500).send('Server Error');
     }
 });
