@@ -11,16 +11,16 @@ export const UserProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true); // For initial user loading
 
-    // Dark Mode State: Initialize from localStorage or default to false (light mode)
-    const [isDarkMode, setIsDarkMode] = useState(() => {
-        try {
-            const storedTheme = localStorage.getItem('theme');
-            return storedTheme === 'dark';
-        } catch (error) {
-            console.error("Failed to read theme from localStorage:", error);
-            return false; // Default to light mode if localStorage is inaccessible
-        }
-    });
+    // Removed isDarkMode state and its related logic
+    // const [isDarkMode, setIsDarkMode] = useState(() => {
+    //     try {
+    //         const storedTheme = localStorage.getItem('theme');
+    //         return storedTheme === 'dark';
+    //     } catch (error) {
+    //         console.error("Failed to read theme from localStorage:", error);
+    //         return false;
+    //     }
+    // });
 
     const [snackbar, setSnackbar] = useState({
         show: false,
@@ -39,19 +39,19 @@ export const UserProvider = ({ children }) => {
         setSnackbar(prev => ({ ...prev, show: false }));
     }, []);
 
-    // Memoize toggleDarkMode to ensure stable function reference
-    const toggleDarkMode = useCallback(() => {
-        setIsDarkMode(prevMode => !prevMode);
-    }, []);
+    // Removed toggleDarkMode function
+    // const toggleDarkMode = useCallback(() => {
+    //     setIsDarkMode(prevMode => !prevMode);
+    // }, []);
 
-    // Effect to update localStorage whenever isDarkMode changes
-    useEffect(() => {
-        try {
-            localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
-        } catch (error) {
-            console.error("Failed to write theme to localStorage:", error);
-        }
-    }, [isDarkMode]);
+    // Removed useEffect for localStorage theme update
+    // useEffect(() => {
+    //     try {
+    //         localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    //     } catch (error) {
+    //         console.error("Failed to write theme to localStorage:", error);
+    //     }
+    // }, [isDarkMode]);
 
     const setAuthToken = (token) => {
         if (token) {
@@ -107,8 +107,9 @@ export const UserProvider = ({ children }) => {
         loginUser,
         logoutUser,
         showSnackbar, // Provide showSnackbar function
-        isDarkMode, // Provide isDarkMode state
-        toggleDarkMode, // Provide toggleDarkMode function
+        // Removed isDarkMode, toggleDarkMode from context value
+        // isDarkMode,
+        // toggleDarkMode,
     };
 
     return (
