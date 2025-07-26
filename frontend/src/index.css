@@ -1,13 +1,332 @@
+/* frontend/src/index.css */
+
+/* Remove default Create React App styles (if any remain) */
+/* .App { text-align: center; } */
+/* .App-logo { height: 40vmin; pointer-events: none; } */
+/* @media (prefers-reduced-motion: no-preference) { .App-logo { animation: App-logo-spin infinite 20s linear; } } */
+/* .App-header { background-color: #282c34; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: calc(10px + 2vmin); color: white; } */
+/* .App-link { color: #61dafb; } */
+/* @keyframes App-logo-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } } */
+
+
+/* Global Body Styles - Ensure no default margins/paddings */
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+  padding: 0;
+  font-family: 'Inter', sans-serif;
+  /* Fallback to sans-serif if Inter isn't loaded */
+  /* Ensure Inter font is loaded in public/index.html <head> for this to work */
+  /* <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet"> */
 }
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+/* Custom class for the main content area background */
+.app-main-content {
+  min-height: 100vh;
+  /* Ensure it takes full viewport height */
+  /* GitHub-like dark gradient */
+  background: linear-gradient(to bottom right, #1a202c, #2d3748, #1a202c);
+  /* Dark gray gradient */
+  color: #e2e8f0;
+  /* Light text color by default for content within main */
+}
+
+/* Header Navbar Styles (Dark transparent and blur) */
+.navbar.bg-dark-transparent {
+  background-color: rgba(26, 32, 44, 0.6) !important;
+  /* Dark gray with 60% opacity */
+  backdrop-filter: blur(4px);
+  /* Subtle blur effect */
+  -webkit-backdrop-filter: blur(4px);
+  /* For Safari support */
+  transition: background-color 0.3s ease;
+  /* Smooth transition */
+}
+
+/* Search Input Styling (Rounded) */
+.navbar-search-input.rounded-pill-custom {
+  border-radius: 50px !important;
+  /* Fully rounded */
+  padding-right: 40px;
+  /* Space for the button if it overlaps */
+  background-color: rgba(74, 85, 104, 0.8) !important;
+  /* Darker input background */
+  border-color: rgba(74, 85, 104, 0.8) !important;
+  /* Darker border */
+  color: #e2e8f0 !important;
+  /* Light text color */
+}
+
+.navbar-search-input.rounded-pill-custom::placeholder {
+  color: rgba(160, 174, 192, 0.7) !important;
+  /* Lighter placeholder text */
+}
+
+/* Adjust search button to fit with rounded input */
+.input-group-text.search-btn-rounded {
+  border-radius: 50px !important;
+  /* Fully rounded button */
+  margin-left: -20px;
+  /* Overlap with input */
+  z-index: 5;
+  /* Ensure button is on top */
+  background-color: #4299e1 !important;
+  /* Blue button */
+  border-color: #4299e1 !important;
+  /* Blue border */
+  color: white !important;
+}
+
+/* General dark card styles for sections like Public Theses and Features */
+.dark-card-section {
+  background-color: #2d3748;
+  /* bg-gray-800 equivalent */
+  border-radius: 0.5rem;
+  /* rounded-lg equivalent */
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  /* shadow-xl equivalent */
+  padding: 2rem;
+  /* py-8 equivalent */
+  margin-top: 2.5rem;
+  /* mt-10 equivalent */
+}
+
+/* Feature card specific styles */
+.feature-card {
+  background-color: #4a5568;
+  /* bg-gray-700 equivalent */
+  border-radius: 0.5rem;
+  /* rounded-lg equivalent */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  /* shadow-md equivalent */
+  padding: 1.5rem;
+  /* p-6 equivalent */
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #e2e8f0;
+  /* text-gray-200 equivalent */
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.feature-card:hover {
+  transform: scale(1.05);
+  box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.4);
+}
+
+.feature-icon-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.05);
+  /* Subtle background for icons */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 1rem;
+}
+
+.feature-icon-circle .svg-inline--fa {
+  color: #63b3ed;
+  /* Default icon color, can be overridden by specific classes */
+}
+
+/* Specific icon colors */
+.feature-icon-circle.blue-icon .svg-inline--fa {
+  color: #63b3ed;
+}
+
+/* text-blue-400 */
+.feature-icon-circle.green-icon .svg-inline--fa {
+  color: #68d391;
+}
+
+/* text-green-400 */
+.feature-icon-circle.purple-icon .svg-inline--fa {
+  color: #a78bfa;
+}
+
+/* text-purple-400 */
+
+
+/* Animated blobs - ensure these styles are here */
+.animated-blob {
+  animation: float 8s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+
+  25% {
+    transform: translate(5px, 10px) rotate(2deg);
+  }
+
+  50% {
+    transform: translate(0, 15px) rotate(0deg);
+  }
+
+  75% {
+    transform: translate(-5px, 10px) rotate(-2deg);
+  }
+
+  100% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+}
+
+/* General text color adjustments for dark theme */
+.text-light-custom {
+  color: #e2e8f0;
+}
+
+/* General light text */
+.text-muted-custom {
+  color: #a0aec0;
+}
+
+/* Muted light text */
+.text-primary-custom {
+  color: #63b3ed;
+}
+
+/* Primary accent color */
+.text-secondary-custom {
+  color: #90cdf4;
+}
+
+/* Secondary accent color */
+
+/* Ensure Bootstrap's default text colors are overridden where needed */
+.text-dark {
+  color: #e2e8f0 !important;
+}
+
+/* Make Bootstrap's text-dark light */
+.text-muted {
+  color: #a0aec0 !important;
+}
+
+/* Make Bootstrap's text-muted light */
+.text-primary {
+  color: #63b3ed !important;
+}
+
+/* Make Bootstrap's text-primary light */
+.text-secondary {
+  color: #90cdf4 !important;
+}
+
+/* Make Bootstrap's text-secondary light */
+.text-success {
+  color: #68d391 !important;
+}
+
+/* Make Bootstrap's text-success light */
+.text-info {
+  color: #63b3ed !important;
+}
+
+/* Make Bootstrap's text-info light */
+.text-warning {
+  color: #f6ad55 !important;
+}
+
+/* Make Bootstrap's text-warning light */
+.text-danger {
+  color: #fc8181 !important;
+}
+
+/* Make Bootstrap's text-danger light */
+
+/* Button adjustments for dark theme */
+.btn-primary {
+  background-color: #4299e1 !important;
+  /* Blue */
+  border-color: #4299e1 !important;
+  color: white !important;
+}
+
+.btn-primary:hover {
+  background-color: #3182ce !important;
+  /* Darker blue on hover */
+  border-color: #3182ce !important;
+}
+
+.btn-success {
+  background-color: #48bb78 !important;
+  /* Green */
+  border-color: #48bb78 !important;
+  color: white !important;
+}
+
+.btn-success:hover {
+  background-color: #38a169 !important;
+  /* Darker green on hover */
+  border-color: #38a169 !important;
+}
+
+.btn-outline-light {
+  color: #e2e8f0 !important;
+  /* Light text */
+  border-color: #e2e8f0 !important;
+  /* Light border */
+}
+
+.btn-outline-light:hover {
+  background-color: #e2e8f0 !important;
+  color: #1a202c !important;
+  /* Dark text on hover */
+}
+
+/* Thesis Card specific adjustments */
+.thesis-card {
+  background-color: #4a5568 !important;
+  /* Darker card background */
+  color: #e2e8f0 !important;
+  /* Light text */
+  border-color: #4a5568 !important;
+  /* Darker border */
+}
+
+.thesis-card .card-title {
+  color: #e2e8f0 !important;
+  /* Light title */
+}
+
+.thesis-card .card-text {
+  color: #a0aec0 !important;
+  /* Muted text */
+}
+
+.thesis-card .text-muted {
+  color: #a0aec0 !important;
+  /* Muted text */
+}
+
+/* Ensure brand-icon is visible */
+.brand-icon {
+  color: #63b3ed;
+  /* A light blue for the brand icon */
+}
+
+/* Navbar links and text */
+.navbar-nav .nav-link,
+.navbar-text {
+  color: #e2e8f0 !important;
+  /* Light text for nav links */
+}
+
+.navbar-nav .nav-link.active {
+  color: #63b3ed !important;
+  /* Active link color */
+}
+
+.navbar-toggler-icon {
+  filter: invert(1);
+  /* Invert the default dark toggler icon to be white */
 }

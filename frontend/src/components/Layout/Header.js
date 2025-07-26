@@ -5,12 +5,10 @@ import { UserContext } from '../../context/UserContext';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
     faBookOpenReader, faUserPlus, faSignInAlt, faSignOutAlt, faUpload,
-    faTachometerAlt, faSearch, faClipboardList, faUserCircle, faTimesCircle
-    // Removed faSun, faMoon as theme toggle is removed
+    faTachometerAlt, faSearch, faClipboardList, faUserCircle
 } from '@fortawesome/free-solid-svg-icons';
 
 const Header = () => {
-    // Reverted: Removed isDarkMode and toggleDarkMode from destructuring
     const { user, logoutUser } = useContext(UserContext);
     const navigate = useNavigate();
     const location = useLocation();
@@ -47,15 +45,10 @@ const Header = () => {
         setSearchQuery(e.target.value);
     };
 
-    const handleClearSearch = () => {
-        setSearchQuery('');
-    };
-
     const handleSearchSubmit = (e) => {
         e.preventDefault();
         if (searchQuery.trim()) {
             navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-            setSearchQuery(''); // Clear search query after submission
         }
     };
 
@@ -72,8 +65,8 @@ const Header = () => {
     };
 
     return (
-        // Reverted: Back to original Bootstrap/light theme classes
-        <nav className="navbar navbar-expand-lg navbar-dark bg-transparent py-3 sticky-top">
+        // Added custom class 'bg-dark-transparent' for the background
+        <nav className="navbar navbar-expand-lg navbar-dark bg-dark-transparent py-3 sticky-top">
             <div className="container-fluid">
                 <Link className={`navbar-brand d-flex align-items-center ${isActive('/') ? 'active' : ''}`} to="/">
                     <FontAwesomeIcon icon={faBookOpenReader} size="2x" className="me-2 brand-icon" />
@@ -101,31 +94,22 @@ const Header = () => {
                     <form className="d-flex my-2 my-lg-0 me-lg-3" role="search" onSubmit={handleSearchSubmit}>
                         <div className="input-group search-input-group">
                             <input
-                                className="form-control navbar-search-input"
+                                // Added custom class 'rounded-pill-custom' for rounding
+                                className="form-control navbar-search-input rounded-pill-custom"
                                 type="search"
                                 placeholder="Search thesis..."
                                 aria-label="Search"
                                 value={searchQuery}
                                 onChange={handleSearchChange}
                             />
-                            {searchQuery && (
-                                <button
-                                    type="button"
-                                    className="btn clear-search-btn"
-                                    onClick={handleClearSearch}
-                                    aria-label="Clear search"
-                                >
-                                    <FontAwesomeIcon icon={faTimesCircle} />
-                                </button>
-                            )}
-                            <button className="btn btn-outline-light input-group-text" type="submit">
+                            {/* Added custom class 'search-btn-rounded' for rounding */}
+                            <button className="btn btn-outline-light input-group-text search-btn-rounded" type="submit">
                                 <FontAwesomeIcon icon={faSearch} />
                             </button>
                         </div>
                     </form>
 
                     <ul className="navbar-nav mb-2 mb-lg-0 align-items-lg-center">
-                        {/* Removed Theme Toggle Button */}
                         {user ? (
                             <>
                                 <li className="nav-item">

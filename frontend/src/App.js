@@ -11,22 +11,23 @@ import DashboardPage from './pages/DashboardPage';
 import UploadThesisPage from './pages/UploadThesisPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import ViewThesisPage from './pages/ViewThesisPage';
-import SearchResultsPage from './pages/SearchResultsPage'; // Re-added SearchResultsPage import
+import SearchResultsPage from './pages/SearchResultsPage';
 
 const AppContent = () => {
   return (
     <Router>
       <Header />
-      <main>
+      <main className="app-main-content">
         <Routes>
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
+          {/* FIXED: Removed duplicate 'element' prop */}
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/upload-thesis" element={<UploadThesisPage />} />
           <Route path="/admin-dashboard" element={<AdminDashboardPage />} />
           <Route path="/view-thesis/:id" element={<ViewThesisPage />} />
-          <Route path="/search" element={<SearchResultsPage />} /> {/* Re-added SearchResultsPage route */}
+          <Route path="/search" element={<SearchResultsPage />} />
           {/* Add other routes as needed */}
         </Routes>
       </main>

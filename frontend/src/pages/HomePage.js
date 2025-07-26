@@ -3,53 +3,35 @@ import React, { useState, useRef, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
-    faRocket, faHome, faFileUpload, faBookOpen, faSpinner, faUserGraduate,
+    faRocket, faFileUpload, faBookOpen, faSpinner, faUserGraduate,
     faCheckCircle, faPenFancy, faTasks // Specific icons for features
 } from '@fortawesome/free-solid-svg-icons';
 import { motion } from 'framer-motion';
-import axios from 'axios'; // Using global axios instance as per your code
+import axios from 'axios';
 import { UserContext } from '../context/UserContext';
-import Snackbar from '../components/Common/Snackbar';
 import ThesisCard from '../components/Thesis/ThesisCard';
 
 const HomePage = () => {
     const fileInputRef = useRef(null);
     const navigate = useNavigate();
-    const { user, loading: userLoading } = useContext(UserContext);
+    const { user, loading: userLoading, showSnackbar } = useContext(UserContext);
 
-    const [snackbar, setSnackbar] = useState({
-        show: false,
-        message: '',
-        type: 'info',
-    });
-
-    // Initialize publicTheses as an empty array - this is crucial
     const [publicTheses, setPublicTheses] = useState([]);
     const [loadingPublicTheses, setLoadingPublicTheses] = useState(true);
     const [publicThesesError, setPublicThesesError] = useState('');
-
-    // Helper function to show snackbar messages
-    const showSnackbar = (message, type = 'info', duration = 3000) => {
-        setSnackbar({ show: true, message, type, duration });
-    };
-
-    const handleCloseSnackbar = () => {
-        setSnackbar({ ...snackbar, show: false });
-    };
 
     const handleUploadClick = () => {
         if (!user) {
             showSnackbar('Please log in to upload your thesis.', 'error');
             setTimeout(() => {
                 navigate('/login');
-            }, snackbar.duration || 3000);
+            }, 1000);
         } else {
             navigate('/upload-thesis');
         }
     };
 
     const handleDownloadPublicThesis = (filePath, fileName) => {
-        // Backend URL is now hardcoded as per your existing code
         const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
         window.open(fileUrl, '_blank');
         showSnackbar(`Downloading ${fileName}...`, 'info');
@@ -59,14 +41,11 @@ const HomePage = () => {
         try {
             setLoadingPublicTheses(true);
             setPublicThesesError('');
-            // Backend URL is now hardcoded as per your existing code
             const res = await axios.get('https://digi-thesis-ai-project.onrender.com/api/theses/public');
 
-            // CRITICAL FIX: Ensure res.data.theses is an array before setting state
             if (Array.isArray(res.data.theses)) {
                 setPublicTheses(res.data.theses);
             } else {
-                // Fallback to empty array if unexpected data format
                 console.warn("API response 'theses' is not an array:", res.data.theses);
                 setPublicTheses([]);
                 showSnackbar('Received unexpected data format for public theses.', 'warning');
@@ -75,7 +54,7 @@ const HomePage = () => {
         } catch (err) {
             console.error('Failed to fetch public theses:', err.response ? err.response.data : err.message);
             setPublicThesesError('Failed to load public submissions. Please try again.');
-            setPublicTheses([]); // CRITICAL FIX: Set to empty array on error
+            setPublicTheses([]);
             showSnackbar('Failed to load public submissions.', 'error');
             setLoadingPublicTheses(false);
         }
@@ -109,7 +88,6 @@ const HomePage = () => {
         }
     };
 
-    // New variants for feature cards
     const featureCardVariants = {
         hidden: { opacity: 0, y: 50 },
         visible: {
@@ -123,23 +101,11 @@ const HomePage = () => {
         },
         hover: {
             scale: 1.05,
-            boxShadow: "0px 10px 20px rgba(0,0,0,0.2)",
+            boxShadow: "0px 10px 20px rgba(0,0,0,0.4)", // Darker shadow for dark theme
             transition: {
                 duration: 0.3
             }
         }
-    };
-
-    const buttonVariants = {
-        hover: {
-            scale: 1.05,
-            boxShadow: "0px 0px 8px rgba(255,255,255,0.5)",
-            transition: {
-                duration: 0.3,
-                yoyo: Infinity
-            }
-        },
-        tap: { scale: 0.95 }
     };
 
     const floatingElementVariants = {
@@ -158,97 +124,90 @@ const HomePage = () => {
     };
 
     return (
-        <div className="homepage-container text-center py-5">
-            <Snackbar
-                message={snackbar.message}
-                type={snackbar.type}
-                show={snackbar.show}
-                onClose={handleCloseSnackbar}
-            />
+        // Main container for the homepage content, relying on app-main-content for global background
+        <div className="py-5 relative overflow-hidden">
+            {/* Animated Blobs - colors adjusted for dark theme */}
+            <motion.div
+                className="animated-blob"
+                variants={floatingElementVariants}
+                animate="animate"
+                style={{
+                    position: 'absolute',
+                    top: '5%',
+                    left: '15%',
+                    width: '150px',
+                    height: '150px',
+                    borderRadius: '50%',
+                    background: 'rgba(102, 252, 241, 0.1)', // Lighter alpha for dark theme
+                    filter: 'blur(70px)',
+                    zIndex: 0
+                }}
+            ></motion.div>
+            <motion.div
+                className="animated-blob"
+                variants={floatingElementVariants}
+                animate="animate"
+                style={{
+                    position: 'absolute',
+                    bottom: '10%',
+                    right: '10%',
+                    width: '180px',
+                    height: '180px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 165, 0, 0.08)', // Lighter alpha
+                    filter: 'blur(70px)',
+                    zIndex: 0,
+                    animationDelay: '2s'
+                }}
+            ></motion.div>
+            <motion.div
+                className="animated-blob"
+                variants={floatingElementVariants}
+                animate="animate"
+                style={{
+                    position: 'absolute',
+                    top: '30%',
+                    right: '20%',
+                    width: '100px',
+                    height: '100px',
+                    borderRadius: '50%',
+                    background: 'rgba(147, 112, 219, 0.1)', // Lighter alpha
+                    filter: 'blur(70px)',
+                    zIndex: 0,
+                    animationDelay: '4s'
+                }}
+            ></motion.div>
+            <motion.div
+                className="animated-blob"
+                variants={floatingElementVariants}
+                animate="animate"
+                style={{
+                    position: 'absolute',
+                    bottom: '25%',
+                    left: '5%',
+                    width: '130px',
+                    height: '130px',
+                    borderRadius: '50%',
+                    background: 'rgba(255, 99, 71, 0.07)', // Lighter alpha
+                    filter: 'blur(70px)',
+                    zIndex: 0,
+                    animationDelay: '6s'
+                }}
+            ></motion.div>
 
-            <section className="hero-section mb-5" style={{ position: 'relative', overflow: 'hidden' }}> {/* Added relative positioning and overflow hidden */}
-                <motion.div
-                    className="animated-blob"
-                    variants={floatingElementVariants}
-                    animate="animate"
-                    style={{
-                        position: 'absolute',
-                        top: '5%',
-                        left: '15%',
-                        width: '150px',
-                        height: '150px',
-                        borderRadius: '50%',
-                        background: 'rgba(102, 252, 241, 0.2)',
-                        filter: 'blur(70px)',
-                        zIndex: 0
-                    }}
-                ></motion.div>
-                <motion.div
-                    className="animated-blob"
-                    variants={floatingElementVariants}
-                    animate="animate"
-                    style={{
-                        position: 'absolute',
-                        bottom: '10%',
-                        right: '10%',
-                        width: '180px',
-                        height: '180px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 165, 0, 0.15)',
-                        filter: 'blur(70px)',
-                        zIndex: 0,
-                        animationDelay: '2s'
-                    }}
-                ></motion.div>
-                <motion.div
-                    className="animated-blob"
-                    variants={floatingElementVariants}
-                    animate="animate"
-                    style={{
-                        position: 'absolute',
-                        top: '30%',
-                        right: '20%',
-                        width: '100px',
-                        height: '100px',
-                        borderRadius: '50%',
-                        background: 'rgba(147, 112, 219, 0.18)',
-                        filter: 'blur(70px)',
-                        zIndex: 0,
-                        animationDelay: '4s'
-                    }}
-                ></motion.div>
-                <motion.div
-                    className="animated-blob"
-                    variants={floatingElementVariants}
-                    animate="animate"
-                    style={{
-                        position: 'absolute',
-                        bottom: '25%',
-                        left: '5%',
-                        width: '130px',
-                        height: '130px',
-                        borderRadius: '50%',
-                        background: 'rgba(255, 99, 71, 0.12)',
-                        filter: 'blur(70px)',
-                        zIndex: 0,
-                        animationDelay: '6s'
-                    }}
-                ></motion.div>
-
-
-                <div style={{ position: 'relative', zIndex: 1 }}>
-
+            <div className="container relative z-10"> {/* Bootstrap container for content width */}
+                <section className="hero-section mb-5 text-center py-5"> {/* Added padding for hero */}
                     <motion.h1
-                        className="display-4 fw-bold mb-3"
+                        className="display-4 fw-bold mb-3 text-light-custom" // Custom light text
                         variants={itemVariants}
                         initial="hidden"
                         animate="visible"
                     >
-                        Build and analyze your Thesis <br /> on a <span className="text-success">Single, Collaborative Platform</span>
+                        Build and analyze your Thesis <br /> on a <span className="text-primary-custom">Single, Collaborative Platform</span> {/* Custom accent color */}
                     </motion.h1>
 
                     <motion.p
-                        className="lead mb-4"
+                        className="lead mb-4 text-muted-custom" // Custom muted light text
                         variants={itemVariants}
                         initial="hidden"
                         animate="visible"
@@ -263,7 +222,7 @@ const HomePage = () => {
                         animate="visible"
                     >
                         <motion.button
-                            className="btn btn-primary btn-lg"
+                            className="btn btn-primary btn-lg shadow-lg" // Bootstrap button with shadow
                             onClick={handleUploadClick}
                             variants={itemVariants}
                             whileHover="hover"
@@ -273,90 +232,91 @@ const HomePage = () => {
                             Upload Your Thesis
                         </motion.button>
                     </motion.div>
-                </div>
-            </section>
+                </section>
 
-            <section className="public-submissions-section py-5 bg-light rounded-3 shadow-lg mt-5">
-                <h2 className="mb-4 text-dark">
-                    <FontAwesomeIcon icon={faBookOpen} className="me-3" /> Latest Approved Theses
-                </h2>
-                {loadingPublicTheses ? (
-                    <div className="d-flex justify-content-center align-items-center py-5">
-                        <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary" />
-                        <p className="ms-3 text-dark">Loading public submissions...</p>
-                    </div>
-                ) : publicThesesError ? (
-                    <div className="alert alert-danger text-center">{publicThesesError}</div>
-                ) : (
-                    // CRITICAL FIX: Ensure publicTheses is an array before checking length
-                    publicTheses && publicTheses.length === 0 ? (
-                        <div className="text-center text-muted">
+                <section className="public-submissions-section dark-card-section px-4 py-5"> {/* Custom dark card section */}
+                    <h2 className="mb-4 text-light-custom text-center">
+                        <FontAwesomeIcon icon={faBookOpen} className="me-3" /> Latest Approved Theses
+                    </h2>
+                    {loadingPublicTheses ? (
+                        <div className="d-flex justify-content-center align-items-center py-5">
+                            <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary-custom" />
+                            <p className="ms-3 text-muted-custom">Loading public submissions...</p>
+                        </div>
+                    ) : publicThesesError ? (
+                        <div className="alert alert-danger text-center">
+                            <strong className="font-bold">Error!</strong>
+                            <span className="block sm:inline"> {publicThesesError}</span>
+                        </div>
+                    ) : publicTheses.length === 0 ? (
+                        <div className="text-center text-muted-custom text-lg py-5">
                             <p className="lead">No approved theses to display yet.</p>
                         </div>
                     ) : (
-                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 px-3">
+                        <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {/* Bootstrap grid */}
                             {publicTheses.map((thesis) => (
                                 <div className="col" key={thesis._id}>
                                     <ThesisCard
                                         thesis={thesis}
                                         onDownload={handleDownloadPublicThesis}
+                                    // ThesisCard itself will be updated to adapt to dark theme separately
                                     />
                                 </div>
                             ))}
                         </div>
-                    )
-                )}
-            </section>
+                    )}
+                </section>
 
-            <section className="features-section py-5 bg-light mt-5">
-                <h2 className="mb-4 text-dark">Key Features</h2>
-                <motion.div
-                    className="row justify-content-center g-4"
-                    variants={containerVariants}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true, amount: 0.3 }}
-                >
-                    {/* Plagiarism Check Feature Card (Clickable) */}
-                    <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
-                        <Link to="/dashboard" className="feature-card-link"> {/* Link to Dashboard */}
-                            <div className="card p-4 h-100">
-                                <div className="feature-icon-circle mx-auto mb-3">
-                                    <FontAwesomeIcon icon={faCheckCircle} size="3x" />
+                <section className="features-section dark-card-section px-4 py-5"> {/* Custom dark card section */}
+                    <h2 className="mb-4 text-light-custom text-center">Key Features</h2>
+                    <motion.div
+                        className="row justify-content-center g-4" // Bootstrap grid
+                        variants={containerVariants}
+                        initial="hidden"
+                        whileInView="visible"
+                        viewport={{ once: true, amount: 0.3 }}
+                    >
+                        {/* Plagiarism Check Feature Card (Clickable) */}
+                        <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
+                            <Link to="/dashboard" className="feature-card-link">
+                                <div className="feature-card"> {/* Custom feature card class */}
+                                    <div className="feature-icon-circle blue-icon"> {/* Custom icon circle with color class */}
+                                        <FontAwesomeIcon icon={faCheckCircle} size="3x" />
+                                    </div>
+                                    <h4 className="text-light-custom">Plagiarism Check</h4>
+                                    <p className="text-muted-custom">Ensure originality and academic integrity with advanced AI detection.</p>
                                 </div>
-                                <h4 className="text-dark">Plagiarism Check</h4>
-                                <p className="text-muted">Ensure originality and academic integrity with advanced AI detection.</p>
-                            </div>
-                        </Link>
-                    </motion.div>
+                            </Link>
+                        </motion.div>
 
-                    {/* Grammar Correction Feature Card (Clickable) */}
-                    <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
-                        <Link to="/dashboard" className="feature-card-link"> {/* Link to Dashboard */}
-                            <div className="card p-4 h-100">
-                                <div className="feature-icon-circle mx-auto mb-3">
-                                    <FontAwesomeIcon icon={faPenFancy} size="3x" />
+                        {/* Grammar Correction Feature Card (Clickable) */}
+                        <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
+                            <Link to="/dashboard" className="feature-card-link">
+                                <div className="feature-card">
+                                    <div className="feature-icon-circle green-icon">
+                                        <FontAwesomeIcon icon={faPenFancy} size="3x" />
+                                    </div>
+                                    <h4 className="text-light-custom">Grammar Correction</h4>
+                                    <p className="text-muted-custom">Refine your writing, improve clarity, and eliminate errors with intelligent suggestions.</p>
                                 </div>
-                                <h4 className="text-dark">Grammar Correction</h4>
-                                <p className="text-muted">Refine your writing, improve clarity, and eliminate errors with intelligent suggestions.</p>
-                            </div>
-                        </Link>
-                    </motion.div>
+                            </Link>
+                        </motion.div>
 
-                    {/* Thesis Management Feature Card (Clickable) */}
-                    <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
-                        <Link to="/dashboard" className="feature-card-link"> {/* Link to Dashboard */}
-                            <div className="card p-4 h-100">
-                                <div className="feature-icon-circle mx-auto mb-3">
-                                    <FontAwesomeIcon icon={faTasks} size="3x" />
+                        {/* Thesis Management Feature Card (Clickable) */}
+                        <motion.div className="col-md-4 col-lg-3" variants={featureCardVariants} whileHover="hover">
+                            <Link to="/dashboard" className="feature-card-link">
+                                <div className="feature-card">
+                                    <div className="feature-icon-circle purple-icon">
+                                        <FontAwesomeIcon icon={faTasks} size="3x" />
+                                    </div>
+                                    <h4 className="text-light-custom">Thesis Management</h4>
+                                    <p className="text-muted-custom">Organize, track, and manage your research progress efficiently in one place.</p>
                                 </div>
-                                <h4 className="text-dark">Thesis Management</h4>
-                                <p className="text-muted">Organize, track, and manage your research progress efficiently in one place.</p>
-                            </div>
-                        </Link>
+                            </Link>
+                        </motion.div>
                     </motion.div>
-                </motion.div>
-            </section>
+                </section>
+            </div>
         </div>
     );
 };

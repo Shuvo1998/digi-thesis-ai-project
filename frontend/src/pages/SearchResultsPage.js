@@ -3,42 +3,68 @@ import React, { useState, useEffect, useContext } from 'react';
 import { useLocation } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faSearch, faSpinner, faExclamationCircle } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios'; // Import axios for future API calls
-import { UserContext } from '../context/UserContext'; // Import UserContext for snackbar
+import axios from 'axios';
+import { UserContext } from '../context/UserContext';
+import ThesisCard from '../components/Thesis/ThesisCard'; // Assuming ThesisCard is used for results
 
 const SearchResultsPage = () => {
     const location = useLocation();
-    const { showSnackbar } = useContext(UserContext); // Get showSnackbar from context
+    const { showSnackbar, user } = useContext(UserContext); // Get showSnackbar and user from context
 
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
+    const fetchSearchResults = async (query) => {
+        setLoading(true);
+        setError('');
+        try {
+            // Ensure user is logged in for search (as per backend /api/theses/search is protected by auth)
+            if (!user || !user.token) {
+                setError('Please log in to perform a search.');
+                showSnackbar('Please log in to perform a search.', 'error');
+                setLoading(false);
+                return;
+            }
+
+            // Make API call to your backend search endpoint
+            // The backend /api/theses/search is protected by auth, so axios needs the token
+            const config = {
+                headers: {
+                    'x-auth-token': localStorage.getItem('token') // Get token from localStorage
+                }
+            };
+            const res = await axios.get(`https://digi-thesis-ai-project.onrender.com/api/theses/search?q=${encodeURIComponent(query)}`, config);
+
+            if (Array.isArray(res.data.theses)) {
+                setSearchResults(res.data.theses);
+                if (res.data.theses.length > 0) {
+                    showSnackbar(`Found ${res.data.theses.length} results for "${query}"`, 'success');
+                } else {
+                    showSnackbar(`No results found for "${query}"`, 'info');
+                }
+            } else {
+                console.warn("API response 'theses' is not an array:", res.data.theses);
+                setSearchResults([]);
+                showSnackbar('Received unexpected data format for search results.', 'warning');
+            }
+        } catch (err) {
+            console.error('Search failed:', err.response ? err.response.data : err.message);
+            setError('Failed to fetch search results. Please try again.');
+            showSnackbar('Failed to fetch search results.', 'error');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        // Parse the query parameter from the URL
         const params = new URLSearchParams(location.search);
-        const query = params.get('q'); // Get the value of 'q' parameter
+        const query = params.get('q');
 
         if (query) {
             setSearchQuery(query);
-            // In a real implementation, you would make an API call here
-            // to your backend search endpoint, e.g.:
-            // fetchSearchResults(query);
-
-            // For now, simulate loading and empty results
-            setLoading(true);
-            setError('');
-            setTimeout(() => {
-                setSearchResults([]); // No actual results yet
-                setLoading(false);
-                if (!query.trim()) {
-                    setError('Please enter a valid search query.');
-                    showSnackbar('Please enter a valid search query.', 'error');
-                } else {
-                    showSnackbar(`Displaying results for: "${query}"`, 'info');
-                }
-            }, 1000); // Simulate network delay
+            fetchSearchResults(query); // Call the actual fetch function
         } else {
             setSearchQuery('');
             setSearchResults([]);
@@ -46,62 +72,46 @@ const SearchResultsPage = () => {
             setError('No search query provided.');
             showSnackbar('No search query provided.', 'warning');
         }
-    }, [location.search, showSnackbar]); // Re-run when URL search params change
+    }, [location.search, showSnackbar, user]); // Add user as dependency for re-fetch on login/logout
 
-    // Placeholder for future search API call
-    // const fetchSearchResults = async (query) => {
-    //     setLoading(true);
-    //     setError('');
-    //     try {
-    //         // Example: const res = await axios.get(`YOUR_BACKEND_URL/api/theses/search?q=${encodeURIComponent(query)}`);
-    //         // setSearchResults(res.data.theses);
-    //         setSearchResults([]); // Placeholder
-    //     } catch (err) {
-    //         console.error('Search failed:', err);
-    //         setError('Failed to fetch search results. Please try again.');
-    //         showSnackbar('Failed to fetch search results.', 'error');
-    //     } finally {
-    //         setLoading(false);
-    //     }
-    // };
+    const handleDownloadResultThesis = (filePath, fileName) => {
+        const fileUrl = `https://digi-thesis-ai-project.onrender.com/${filePath.replace(/\\/g, '/')}`;
+        window.open(fileUrl, '_blank');
+        showSnackbar(`Downloading ${fileName}...`, 'info');
+    };
 
     return (
-        <div className="container py-5"> {/* Bootstrap container for centering and padding */}
-            <h1 className="text-center mb-5 text-dark"> {/* Bootstrap text-dark for visibility */}
+        // Container with Bootstrap classes and custom text color for dark theme
+        <div className="container py-5 text-light-custom">
+            <h1 className="text-center mb-5 text-light-custom">
                 <FontAwesomeIcon icon={faSearch} className="me-3" /> Search Results
             </h1>
 
-            <div className="card p-4 shadow-lg mb-4"> {/* Bootstrap card styling */}
-                <h3 className="mb-3 text-primary"> {/* Bootstrap text-primary */}
-                    Query: <span className="text-secondary">{searchQuery || 'N/A'}</span> {/* Bootstrap text-secondary */}
+            <div className="card p-4 shadow-lg mb-4 dark-card-section"> {/* Custom dark card section */}
+                <h3 className="mb-3 text-primary-custom">
+                    Query: <span className="text-secondary-custom">{searchQuery || 'N/A'}</span>
                 </h3>
                 {loading ? (
-                    <div className="text-center py-5">
-                        <FontAwesomeIcon icon={faSpinner} spin size="2x" className="text-info" /> {/* Bootstrap text-info */}
-                        <p className="mt-3 text-muted">Loading search results...</p> {/* Bootstrap text-muted */}
+                    <div className="d-flex justify-content-center align-items-center py-5">
+                        <FontAwesomeIcon icon={faSpinner} spin size="3x" className="text-primary-custom" />
+                        <p className="ms-3 text-muted-custom">Loading search results...</p>
                     </div>
                 ) : error ? (
-                    <div className="alert alert-danger text-center"> {/* Bootstrap alert-danger */}
+                    <div className="alert alert-danger text-center">
                         <FontAwesomeIcon icon={faExclamationCircle} className="me-2" /> {error}
                     </div>
                 ) : searchResults.length === 0 ? (
-                    <div className="text-center text-muted py-5"> {/* Bootstrap text-muted */}
+                    <div className="text-center text-muted-custom py-5">
                         <p className="lead">No results found for "{searchQuery}".</p>
                         <p>Try a different keyword or check your spelling.</p>
                     </div>
                 ) : (
-                    // In a real implementation, you'd map over searchResults here
-                    <div>
-                        <p className="text-success">Found {searchResults.length} results.</p> {/* Bootstrap text-success */}
-                        {/* Example:
-                        <div className="row">
-                            {searchResults.map(thesis => (
-                                <div className="col-md-4 mb-4" key={thesis._id}>
-                                    <ThesisCard thesis={thesis} onDownload={...} />
-                                </div>
-                            ))}
-                        </div>
-                        */}
+                    <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4"> {/* Bootstrap grid */}
+                        {searchResults.map(thesis => (
+                            <div className="col" key={thesis._id}>
+                                <ThesisCard thesis={thesis} onDownload={handleDownloadResultThesis} />
+                            </div>
+                        ))}
                     </div>
                 )}
             </div>
