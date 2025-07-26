@@ -1,11 +1,12 @@
 // backend/routes/api/theses.js
 const express = require('express');
 const router = express.Router();
-const { check, validationResult } = require('express-validator'); // Import check and validationResult
+const { check, validationResult } = require('express-validator');
 const auth = require('../../middleware/auth');
-const upload = require('../../middleware/upload'); // Multer middleware for file uploads
+const upload = require('../../middleware/upload');
 const Thesis = require('../../models/Thesis');
-const User = require('../../models/User'); // Assuming you might need User model for user details
+const User = require('../../models/User');
+const fs = require('fs');
 
 // @route   POST api/theses/upload
 // @desc    Upload a new thesis
@@ -13,30 +14,24 @@ const User = require('../../models/User'); // Assuming you might need User model
 router.post(
     '/upload',
     [
-        auth, // Ensure user is authenticated
-        upload.single('thesisFile'), // Handle single file upload named 'thesisFile'
-        // Validation for text fields
+        auth,
+        upload.single('thesisFile'),
         check('title', 'Thesis title is required').not().isEmpty(),
         check('abstract', 'Abstract is required').not().isEmpty(),
-        // NEW FIELD VALIDATION
+        check('keywords', 'Keywords are required').not().isEmpty(),
         check('authorName', 'Author name is required').not().isEmpty(),
         check('department', 'Department is required').not().isEmpty(),
         check('submissionYear', 'Submission year is required and must be a 4-digit number')
             .not().isEmpty()
             .isLength({ min: 4, max: 4 })
-            .withMessage('Submission year must be 4 digits')
             .isNumeric()
             .withMessage('Submission year must be a number'),
-        check('isPublic', 'isPublic must be a boolean').isBoolean().optional() // Optional, but validate if present
+        check('isPublic', 'isPublic must be a boolean').isBoolean().optional()
     ],
     async (req, res) => {
-        // Check for validation errors from express-validator
         const errors = validationResult(req);
         if (!errors.isEmpty()) {
-            // If there are validation errors, return them
-            // Also, if a file was uploaded before validation failed, clean it up
             if (req.file) {
-                const fs = require('fs');
                 fs.unlink(req.file.path, (err) => {
                     if (err) console.error('Error deleting uploaded file:', err);
                 });
@@ -44,46 +39,38 @@ router.post(
             return res.status(400).json({ errors: errors.array() });
         }
 
-        // Check if a file was actually uploaded by Multer
         if (!req.file) {
             return res.status(400).json({ msg: 'No thesis file uploaded' });
         }
 
         try {
-            // Get user from token
             const user = await User.findById(req.user.id).select('-password');
             if (!user) {
                 return res.status(404).json({ msg: 'User not found' });
             }
 
-            // Extract fields from req.body
             const { title, abstract, keywords, authorName, department, submissionYear, isPublic } = req.body;
 
-            // Create a new Thesis instance
             const newThesis = new Thesis({
                 user: req.user.id,
                 title,
                 abstract,
                 keywords: keywords ? keywords.split(',').map(keyword => keyword.trim()) : [],
-                filePath: req.file.path, // Path where Multer saved the file
+                filePath: req.file.path,
                 fileName: req.file.originalname,
                 fileSize: req.file.size,
-                // Assign new fields
                 authorName,
                 department,
                 submissionYear,
-                isPublic: isPublic !== undefined ? isPublic : true // Default to true if not provided
+                isPublic: isPublic !== undefined ? isPublic : true,
+                status: 'pending'
             });
 
-            // Save the thesis to the database
             const thesis = await newThesis.save();
-
             res.json({ msg: 'Thesis uploaded successfully', thesis });
         } catch (err) {
             console.error(err.message);
-            // If an error occurs after file upload but before saving to DB, delete the file
             if (req.file) {
-                const fs = require('fs');
                 fs.unlink(req.file.path, (unlinkErr) => {
                     if (unlinkErr) console.error('Error deleting uploaded file on server error:', unlinkErr);
                 });
@@ -93,22 +80,21 @@ router.post(
     }
 );
 
-
 // @route   GET api/theses/public
 // @desc    Get all approved public theses with pagination
 // @access  Public
 router.get('/public', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
-        const limit = parseInt(req.query.limit) || 9; // Default 9 theses per page
+        const limit = parseInt(req.query.limit) || 9;
         const skip = (page - 1) * limit;
 
         const totalTheses = await Thesis.countDocuments({ status: 'approved', isPublic: true });
         const theses = await Thesis.find({ status: 'approved', isPublic: true })
-            .sort({ uploadDate: -1 }) // Sort by most recent
+            .sort({ uploadDate: -1 })
             .skip(skip)
             .limit(limit)
-            .populate('user', ['username', 'email']); // Populate user details
+            .populate('user', ['username', 'email']);
 
         res.json({
             theses,
@@ -145,24 +131,21 @@ router.get('/pending', auth, async (req, res) => {
             return res.status(403).json({ msg: 'Access denied. Not authorized for this action.' });
         }
 
-        // Fetch all pending theses, populate user info
-        // Explicitly define the path and select fields for populate
         const pendingTheses = await Thesis.find({ status: 'pending' })
             .sort({ uploadDate: -1 })
             .populate({
                 path: 'user',
-                select: 'username email' // Select specific fields from the user model
+                select: 'username email'
             });
 
         res.json({
             theses: pendingTheses,
-            currentPage: 1, // Defaulting for now
-            totalPages: 1, // Defaulting for now
+            currentPage: 1,
+            totalPages: 1,
             totalTheses: pendingTheses.length
         });
     } catch (err) {
         console.error(err.message);
-        // Log the full error to get more details on Render logs
         console.error("Error fetching pending theses:", err);
         res.status(500).send('Server Error');
     }
@@ -179,10 +162,7 @@ router.get('/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Thesis not found' });
         }
 
-        // Check if the thesis is public and approved
         const isPublicAndApproved = thesis.isPublic && thesis.status === 'approved';
-
-        // Check if the logged-in user is the owner or an admin/supervisor
         const isOwnerOrAdmin = req.user && (thesis.user._id.toString() === req.user.id || req.user.role === 'admin' || req.user.role === 'supervisor');
 
         if (!isPublicAndApproved && !isOwnerOrAdmin) {
@@ -198,7 +178,6 @@ router.get('/:id', auth, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-
 
 // @route   PUT api/theses/approve/:id
 // @desc    Approve a pending thesis (Admin/Supervisor only)
@@ -265,13 +244,11 @@ router.post('/check-plagiarism/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Thesis not found' });
         }
 
-        // Check if user is owner, admin, or supervisor
         const user = await User.findById(req.user.id);
         if (thesis.user.toString() !== req.user.id && user.role !== 'admin' && user.role !== 'supervisor') {
             return res.status(401).json({ msg: 'User not authorized to perform plagiarism check on this thesis' });
         }
 
-        // Simulate plagiarism check (replace with actual AI call)
         const simulatedResult = Math.random() < 0.5
             ? 'Plagiarism check complete: 15% similarity found. Review required.'
             : 'Plagiarism check complete: 2% similarity found. No significant issues.';
@@ -300,13 +277,11 @@ router.post('/check-grammar/:id', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Thesis not found' });
         }
 
-        // Check if user is owner, admin, or supervisor
         const user = await User.findById(req.user.id);
         if (thesis.user.toString() !== req.user.id && user.role !== 'admin' && user.role !== 'supervisor') {
             return res.status(401).json({ msg: 'User not authorized to perform grammar check on this thesis' });
         }
 
-        // Simulate grammar check (replace with actual AI call)
         const simulatedResult = `Grammar check complete:
 - Found 3 spelling errors (e.g., 'teh' -> 'the').
 - Found 2 grammatical issues (e.g., 'He go' -> 'He goes').
@@ -338,19 +313,15 @@ router.delete('/:id', auth, async (req, res) => {
 
         const user = await User.findById(req.user.id);
 
-        // Check if user is owner OR admin/supervisor
         if (thesis.user.toString() !== req.user.id && user.role !== 'admin' && user.role !== 'supervisor') {
             return res.status(401).json({ msg: 'User not authorized to delete this thesis' });
         }
 
-        // Remove the file from the server's uploads directory
-        const fs = require('fs');
         fs.unlink(thesis.filePath, async (err) => {
             if (err) {
                 console.error('Error deleting thesis file from server:', err);
-                // Even if file deletion fails, proceed to delete from DB
             }
-            await thesis.deleteOne(); // Use deleteOne() instead of remove()
+            await thesis.deleteOne();
             res.json({ msg: 'Thesis removed' });
         });
 
@@ -365,10 +336,10 @@ router.delete('/:id', auth, async (req, res) => {
 
 // @route   GET api/theses/search
 // @desc    Search for approved public theses by title, abstract, keywords, author, department, year
-// @access  Public
-router.get('/search', async (req, res) => {
+// @access  Public (MODIFIED: Removed 'auth' middleware)
+router.get('/search', async (req, res) => { // Removed 'auth' middleware here
     try {
-        const { q } = req.query; // Get search query from query parameters
+        const { q } = req.query;
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 9;
         const skip = (page - 1) * limit;
@@ -377,19 +348,17 @@ router.get('/search', async (req, res) => {
             return res.status(400).json({ msg: 'Search query (q) is required' });
         }
 
-        // Create a case-insensitive regex for searching across multiple fields
         const searchRegex = new RegExp(q, 'i');
 
         const query = {
             status: 'approved',
-            isPublic: true, // Only search public and approved theses
+            isPublic: true,
             $or: [
                 { title: { $regex: searchRegex } },
                 { abstract: { $regex: searchRegex } },
-                { keywords: { $in: [searchRegex] } }, // Search within keywords array
-                { authorName: { $regex: searchRegex } }, // Search by author name
-                { department: { $regex: searchRegex } }, // Search by department
-                // Only include submissionYear in $or if 'q' is a valid number
+                { keywords: { $in: [searchRegex] } },
+                { authorName: { $regex: searchRegex } },
+                { department: { $regex: searchRegex } },
                 ...(isNaN(parseInt(q)) ? [] : [{ submissionYear: parseInt(q) }])
             ]
         };
@@ -410,11 +379,9 @@ router.get('/search', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        // Log the full error to get more details on Render logs
         console.error("Error searching theses:", err);
         res.status(500).send('Server Error');
     }
 });
-
 
 module.exports = router;
